@@ -1,0 +1,593 @@
+generator client {
+  provider = "prisma-client-js"
+  engineType = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  AUTHOR
+  ADMIN
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  BLOCKED
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  REFUNDED
+}
+
+enum AiGenerationStatus {
+  DRAFT
+  APPLIED
+  REJECTED
+}
+
+enum AiMessageRole {
+  USER
+  ASSISTANT
+}
+
+enum CertificateType {
+  COMPLETION
+  VERIFIED_SKILL
+  EXPERT_REVIEWED
+}
+
+enum CertificateStatus {
+  PENDING
+  ISSUED
+  REVOKED
+  EXPIRED
+}
+
+enum CertificateReviewerType {
+  AI
+  AUTHOR
+  EXPERT
+  ADMIN
+}
+
+enum CertificateSubmissionStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  NEEDS_REVISION
+}
+
+enum SalesPageStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  PUBLISHED
+  REJECTED
+  UNPUBLISHED
+}
+
+enum SalesPageBlockType {
+  HERO
+  OUTCOMES
+  WHO_IS_THIS_FOR
+  WHAT_YOU_WILL_BUILD
+  CURRICULUM
+  AUTHOR
+  FEATURES
+  BONUSES
+  FILES_INCLUDED
+  TESTIMONIALS
+  FAQ
+  PRICING
+  CTA
+  COMPARISON
+  PROCESS
+  CERTIFICATE
+  COMMUNITY
+  CUSTOM_TEXT
+  IMAGE_TEXT
+  ICON_GRID
+}
+
+enum SalesPageSubmissionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SalesPageAnalyticsEventType {
+  PAGE_VIEW
+  CTA_CLICK
+  CHECKOUT_CLICK
+  PURCHASE
+  SCROLL_25
+  SCROLL_50
+  SCROLL_75
+  SCROLL_100
+  FAQ_OPEN
+  VIDEO_PLAY
+}
+
+enum ModerationIssueType {
+  PROFANITY
+  MISLEADING_CLAIM
+  GUARANTEED_INCOME
+  GUARANTEED_EMPLOYMENT
+  BAD_CONTENT
+  COPYRIGHT_RISK
+  SPAM
+  OTHER
+}
+
+enum ModerationIssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum ModerationIssueStatus {
+  OPEN
+  RESOLVED
+  IGNORED
+}
+
+model User {
+  id                         String                   @id @default(cuid())
+  name                       String
+  email                      String                   @unique
+  passwordHash               String
+  role                       UserRole                 @default(STUDENT)
+  avatarUrl                  String?
+  authoredCourses            Course[]                 @relation("CourseAuthor")
+  enrollments                Enrollment[]
+  orders                     Order[]
+  reviews                    Review[]
+  aiMessages                 AiMessage[]
+  certificates               Certificate[]            @relation("CertificateUser")
+  authoredCertificates       Certificate[]            @relation("CertificateAuthor")
+  certificateSubmissions     CertificateSubmission[]
+  certificateReviews         CertificateReview[]      @relation("CertificateReviewer")
+  reviewedSalesPages         CourseSalesPage[]        @relation("SalesPageReviewer")
+  authoredSalesPageSubmissions SalesPageSubmission[]  @relation("SalesPageSubmissionAuthor")
+  reviewedSalesPageSubmissions SalesPageSubmission[]  @relation("SalesPageSubmissionReviewer")
+  salesPageEvents            SalesPageAnalyticsEvent[]
+  moderationIssues           CourseModerationIssue[]  @relation("CourseModerationIssueAuthor")
+  accounts                   Account[]
+  sessions                   Session[]
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+}
+
+model Course {
+  id                       String                    @id @default(cuid())
+  authorId                 String
+  title                    String
+  slug                     String                    @unique
+  description              String                    @db.Text
+  category                 String
+  price                    Decimal                   @db.Decimal(10, 2)
+  currency                 String                    @default("USD")
+  coverUrl                 String?
+  level                    String
+  language                 String
+  status                   CourseStatus              @default(DRAFT)
+  aiEnhanced               Boolean                   @default(false)
+  author                   User                      @relation("CourseAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  modules                  Module[]
+  badges                   Badge[]
+  enrollments              Enrollment[]
+  orders                   Order[]
+  reviews                  Review[]
+  aiGenerations            AiGeneration[]
+  aiMessages               AiMessage[]
+  certificates             Certificate[]
+  certificateSubmissions   CertificateSubmission[]
+  salesPage                CourseSalesPage?
+  salesPageAnalyticsEvents SalesPageAnalyticsEvent[]
+  moderationIssues         CourseModerationIssue[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+
+  @@index([authorId])
+  @@index([status, category])
+}
+
+model Module {
+  id          String   @id @default(cuid())
+  courseId    String
+  title       String
+  description String   @db.Text
+  order       Int
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+
+  @@unique([courseId, order])
+}
+
+model Lesson {
+  id              String          @id @default(cuid())
+  moduleId        String
+  title           String
+  description     String          @db.Text
+  videoUrl        String?
+  contentText     String          @db.Text
+  transcript      String?         @db.Text
+  materials       Json?
+  aiSummary       String?         @db.Text
+  order           Int
+  durationMinutes Int
+  module          Module          @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quiz            Quiz?
+  assignment      Assignment?
+  checklist       Checklist?
+  quest           Quest?
+  lessonProgresses LessonProgress[]
+  aiGenerations   AiGeneration[]
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@unique([moduleId, order])
+}
+
+model Quiz {
+  id        String @id @default(cuid())
+  lessonId  String @unique
+  title     String
+  questions Json
+  lesson    Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model Assignment {
+  id          String @id @default(cuid())
+  lessonId    String @unique
+  title       String
+  description String @db.Text
+  rubric      Json
+  lesson      Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model Checklist {
+  id       String @id @default(cuid())
+  lessonId String @unique
+  items    Json
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model Quest {
+  id           String @id @default(cuid())
+  lessonId     String @unique
+  title        String
+  description  String @db.Text
+  rewardPoints Int
+  lesson       Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id            String       @id @default(cuid())
+  courseId      String?
+  certificateId String?
+  title         String
+  description   String       @db.Text
+  icon          String
+  level         String?
+  condition     Json?
+  metadata      Json?
+  course        Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  certificate   Certificate? @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([certificateId])
+}
+
+model Enrollment {
+  id              String           @id @default(cuid())
+  userId          String
+  courseId        String
+  progressPercent Int              @default(0)
+  points          Int              @default(0)
+  level           Int              @default(1)
+  streakDays      Int              @default(0)
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessonProgresses LessonProgress[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model LessonProgress {
+  id           String      @id @default(cuid())
+  enrollmentId String
+  lessonId     String
+  completed    Boolean     @default(false)
+  score        Int?
+  completedAt  DateTime?
+  enrollment   Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson       Lesson      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([lessonId])
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  userId          String
+  courseId        String
+  amount          Decimal     @db.Decimal(10, 2)
+  platformFee     Decimal     @db.Decimal(10, 2)
+  authorRevenue   Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(PENDING)
+  paymentProvider String?
+  paymentId       String?
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course          Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt       DateTime    @default(now())
+
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  rating    Int
+  text      String   @db.Text
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+}
+
+model AiGeneration {
+  id        String             @id @default(cuid())
+  courseId  String
+  lessonId  String?
+  type      String
+  prompt    String             @db.Text
+  result    Json
+  status    AiGenerationStatus @default(DRAFT)
+  course    Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lesson    Lesson?            @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  createdAt DateTime           @default(now())
+
+  @@index([courseId])
+  @@index([lessonId])
+}
+
+model AiMessage {
+  id        String        @id @default(cuid())
+  courseId  String
+  userId    String
+  role      AiMessageRole
+  content   String        @db.Text
+  course    Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@index([courseId])
+  @@index([userId])
+}
+
+model Certificate {
+  id             String            @id @default(cuid())
+  certificateId  String            @unique
+  userId         String
+  courseId       String
+  authorId       String
+  type           CertificateType
+  track          String
+  title          String
+  description    String            @db.Text
+  skills         Json
+  criteria       Json
+  score          Int
+  status         CertificateStatus  @default(PENDING)
+  projectUrl     String?
+  demoVideoUrl   String?
+  repositoryUrl  String?
+  issuedAt       DateTime
+  expiresAt      DateTime?
+  user           User              @relation("CertificateUser", fields: [userId], references: [id], onDelete: Cascade)
+  course         Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  author         User              @relation("CertificateAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  reviews        CertificateReview[]
+  badges         Badge[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([authorId])
+  @@index([status])
+}
+
+model CertificateReview {
+  id            String                  @id @default(cuid())
+  certificateId String
+  reviewerId    String?
+  reviewerType  CertificateReviewerType
+  score         Int
+  feedback      String                  @db.Text
+  rubric        Json
+  certificate   Certificate             @relation(fields: [certificateId], references: [id], onDelete: Cascade)
+  reviewer      User?                   @relation("CertificateReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  createdAt     DateTime                @default(now())
+
+  @@index([certificateId])
+  @@index([reviewerId])
+}
+
+model CertificateSubmission {
+  id                 String                      @id @default(cuid())
+  userId             String
+  courseId           String
+  projectTitle       String
+  projectDescription String                      @db.Text
+  projectUrl         String
+  demoVideoUrl       String?
+  repositoryUrl      String?
+  files              Json
+  status             CertificateSubmissionStatus @default(DRAFT)
+  user               User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course             Course                      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt          DateTime                    @default(now())
+  updatedAt          DateTime                    @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([status])
+}
+
+model CourseSalesPage {
+  id              String                 @id @default(cuid())
+  courseId        String                 @unique
+  slug            String                 @unique
+  status          SalesPageStatus        @default(DRAFT)
+  title           String
+  metaTitle       String?
+  metaDescription String?                @db.Text
+  ogImage         String?
+  theme           Json?
+  publishedAt     DateTime?
+  submittedAt     DateTime?
+  reviewedAt      DateTime?
+  reviewedById    String?
+  rejectionReason String?                @db.Text
+  course          Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  reviewedBy      User?                  @relation("SalesPageReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  blocks          SalesPageBlock[]
+  submissions     SalesPageSubmission[]
+  events          SalesPageAnalyticsEvent[]
+  issues          CourseModerationIssue[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([status])
+  @@index([reviewedById])
+}
+
+model SalesPageBlock {
+  id          String             @id @default(cuid())
+  salesPageId String
+  type        SalesPageBlockType
+  order       Int
+  title       String?
+  subtitle    String?            @db.Text
+  content     Json
+  settings    Json?
+  isVisible   Boolean            @default(true)
+  salesPage   CourseSalesPage    @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([salesPageId, order])
+  @@index([salesPageId, type])
+}
+
+model SalesPageSubmission {
+  id            String                     @id @default(cuid())
+  salesPageId   String
+  authorId      String
+  status        SalesPageSubmissionStatus  @default(PENDING)
+  message       String?                    @db.Text
+  adminComment  String?                    @db.Text
+  reviewedAt    DateTime?
+  reviewedById  String?
+  salesPage     CourseSalesPage            @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+  author        User                       @relation("SalesPageSubmissionAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  reviewedBy    User?                      @relation("SalesPageSubmissionReviewer", fields: [reviewedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime                   @default(now())
+
+  @@index([salesPageId])
+  @@index([authorId])
+  @@index([status])
+  @@index([reviewedById])
+}
+
+model SalesPageAnalyticsEvent {
+  id         String                      @id @default(cuid())
+  salesPageId String
+  courseId   String
+  visitorId  String?
+  userId     String?
+  type       SalesPageAnalyticsEventType
+  metadata   Json?
+  salesPage  CourseSalesPage             @relation(fields: [salesPageId], references: [id], onDelete: Cascade)
+  course     Course                      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User?                       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt  DateTime                    @default(now())
+
+  @@index([salesPageId, type, createdAt])
+  @@index([courseId, type, createdAt])
+  @@index([visitorId])
+  @@index([userId])
+}
+
+model CourseModerationIssue {
+  id          String                  @id @default(cuid())
+  courseId    String
+  salesPageId String?
+  authorId    String
+  type        ModerationIssueType
+  severity    ModerationIssueSeverity
+  message     String                  @db.Text
+  fieldPath   String?
+  status      ModerationIssueStatus   @default(OPEN)
+  course      Course                  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  salesPage   CourseSalesPage?        @relation(fields: [salesPageId], references: [id], onDelete: SetNull)
+  author      User                    @relation("CourseModerationIssueAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([courseId])
+  @@index([salesPageId])
+  @@index([authorId])
+  @@index([status, severity])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
