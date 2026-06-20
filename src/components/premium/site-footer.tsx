@@ -25,13 +25,13 @@ export function SiteFooter() {
             Гайды
           </Link>
           <Link href="/free" className="transition duration-200 hover:text-black">
-            Starter kit
+            Стартовый набор
           </Link>
           <Link href="/telegram" className="transition duration-200 hover:text-black">
-            Telegram
+            Телеграм
           </Link>
           <Link href="/bootcamp" className="transition duration-200 hover:text-black">
-            Bootcamp
+            Буткемп
           </Link>
           <Link href="/authors" className="transition duration-200 hover:text-black">
             Авторы

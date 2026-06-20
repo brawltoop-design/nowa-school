@@ -30,7 +30,7 @@ export function LessonQuizCard({
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [score, setScore] = useState<number | null>(initialScore);
   const [message, setMessage] = useState<string | null>(
-    initialScore !== null ? `Последний сохраненный score: ${initialScore}%` : null,
+    initialScore !== null ? `Последний сохраненный балл: ${initialScore}%` : null,
   );
   const [isPending, setIsPending] = useState(false);
 
@@ -89,19 +89,19 @@ export function LessonQuizCard({
       >
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <Badge variant="primary">Quiz</Badge>
+            <Badge variant="primary">Тест</Badge>
             <h3 className="mt-4 text-2xl font-semibold tracking-tight text-black">
               {quiz.title}
             </h3>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-black/56">
-              Аккуратная проверка понимания урока. Score сохраняется в прогресс, а
-              за результат от 80% начисляется бонус +20 points.
+              Аккуратная проверка понимания урока. Балл сохраняется в прогресс, а
+              за результат от 80% начисляется бонус +20 очков.
             </p>
           </div>
 
           {score !== null ? (
             <div className="rounded-full bg-[#eef0ff] px-4 py-3 text-sm font-medium text-[#3d3bff]">
-              Score {score}%
+              Балл {score}%
             </div>
           ) : null}
         </div>
@@ -182,7 +182,7 @@ export function LessonQuizCard({
         {isAdminPreview ? (
           <div className="mt-6 flex items-center gap-3 rounded-[1.5rem] border border-black/6 bg-[#f8f9fb] px-4 py-4 text-sm text-black/62">
             <CircleHelp className="size-4 text-[#3d3bff]" />
-            <span>В admin preview score не сохраняется.</span>
+            <span>В режиме предпросмотра администратора балл не сохраняется.</span>
           </div>
         ) : (
           <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -197,7 +197,7 @@ export function LessonQuizCard({
               ) : (
                 <CheckCircle2 className="mr-2 size-4" />
               )}
-              {isPending ? "Сохраняем score..." : "Проверить тест"}
+              {isPending ? "Сохраняем балл..." : "Проверить тест"}
             </PremiumButton>
 
             <p className="text-sm text-black/46">

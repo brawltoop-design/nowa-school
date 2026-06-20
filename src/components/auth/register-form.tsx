@@ -114,12 +114,12 @@ export function RegisterForm() {
           {[
             {
               value: "student" as const,
-              title: "Student",
+              title: "Ученик",
               description: "Учиться внутри платформы",
             },
             {
               value: "author" as const,
-              title: "Author",
+              title: "Автор",
               description: "Создавать и продавать курсы",
             },
           ].map((option) => (

@@ -33,7 +33,7 @@ export function CourseCard({
   coverFromClassName,
   coverToClassName,
   href = "/learn",
-  ctaLabel = "Open course",
+  ctaLabel = "Открыть курс",
   minimal = false,
 }: CourseCardProps) {
   return (
@@ -56,7 +56,7 @@ export function CourseCard({
             </Badge>
             <div>
               <p className="text-sm text-white/80">
-                {minimal ? "Course" : "AI learning experience"}
+                {minimal ? "Курс" : "AI-обучение"}
               </p>
               <h3 className="mt-2 text-2xl font-semibold tracking-tight">{title}</h3>
             </div>
@@ -75,11 +75,11 @@ export function CourseCard({
           >
             <div className="flex items-center gap-2 rounded-full bg-[#f5f8ff] px-3 py-2">
               <BookOpen className="size-4" />
-              <span>{lessons} lessons</span>
+              <span>{lessons} уроков</span>
             </div>
             <div className="flex items-center gap-2 rounded-full bg-[#f5f8ff] px-3 py-2">
               <Users className="size-4" />
-              <span>{formatCompactNumber(students)} learners</span>
+              <span>{formatCompactNumber(students)} учеников</span>
             </div>
             <div className="flex items-center gap-2 rounded-full bg-[#fff6d8] px-3 py-2 text-[#564a22]">
               <Sparkles className="size-4" />
@@ -90,7 +90,7 @@ export function CourseCard({
           <div className="mt-6 space-y-3">
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">
-                {minimal ? "Completion" : "Completion signal"}
+                {minimal ? "Прогресс" : "Сигнал прогресса"}
               </span>
               <span className="font-semibold text-foreground">{progress}%</span>
             </div>

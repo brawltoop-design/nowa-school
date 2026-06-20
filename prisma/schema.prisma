@@ -205,6 +205,7 @@ model Module {
   courseId    String
   title       String
   description String   @db.Text
+  practice    Json?
   order       Int
   course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons     Lesson[]

@@ -336,16 +336,16 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
 
         const message =
           payload.provider === "mock"
-            ? payload.warning ?? "Demo transcript generated."
-            : "Transcript generated and saved.";
+            ? payload.warning ?? "Демо-транскрипт сгенерирован."
+            : "Транскрипт сгенерирован и сохранен.";
 
         setSuccessMessage(message);
         showToast(
-          payload.provider === "mock" ? "Demo transcript generated." : message,
+          payload.provider === "mock" ? "Демо-транскрипт сгенерирован." : message,
           payload.provider === "mock" ? "warning" : "success",
         );
       } catch {
-        const message = "Не удалось обратиться к transcription API.";
+        const message = "Не удалось обратиться к API транскрибации.";
         setServerError(message);
         showToast(message, "error");
       } finally {
@@ -399,7 +399,7 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           <div className="flex items-center gap-2">
             <Badge variant="subtle">Урок {lesson.order}</Badge>
             <span className="text-sm text-black/42">{lesson.durationMinutes} мин</span>
-            {lesson.aiSummary ? <Badge variant="primary">AI-ready</Badge> : null}
+            {lesson.aiSummary ? <Badge variant="primary">AI готово</Badge> : null}
           </div>
           <h4 className="mt-3 text-xl font-semibold tracking-tight text-black">
             {lesson.title}
@@ -453,7 +453,7 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
         title="Удалить урок?"
-        description="Урок, transcript, материалы и AI-результаты для него будут удалены из builder."
+        description="Урок, транскрипт, материалы и AI-результаты для него будут удалены из конструктора."
         confirmLabel="Удалить урок"
         pending={isDeleting}
         onConfirm={() => {
@@ -479,16 +479,16 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`lesson-video-${lesson.id}`}>Video URL</Label>
+            <Label htmlFor={`lesson-video-${lesson.id}`}>URL видео</Label>
             <Input
               id={`lesson-video-${lesson.id}`}
-              placeholder="https://youtube.com/... or /uploads/demo-video.mp4"
+              placeholder="https://youtube.com/... или /uploads/demo-video.mp4"
               {...form.register("videoUrl")}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor={`lesson-duration-${lesson.id}`}>Duration</Label>
+            <Label htmlFor={`lesson-duration-${lesson.id}`}>Длительность</Label>
             <Input
               id={`lesson-duration-${lesson.id}`}
               type="number"
@@ -501,9 +501,9 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           <div className="space-y-2 lg:col-span-2">
             <MockUploadDropzone
               id={`lesson-video-upload-${lesson.id}`}
-              title="Upload lesson video"
-              description="Для MVP можно либо вставить video URL вручную, либо выбрать файл и сохранить mock storage URL."
-              hint="Accepted for mock mode: .mp4, .mov, .webm. После выбора мы сохраним fake URL вида /uploads/demo-file-name.mp4."
+              title="Загрузить видео урока"
+              description="Для MVP можно либо вставить ссылку на видео вручную, либо выбрать файл и сохранить демо-ссылку."
+              hint="Поддерживается в демо-режиме: .mp4, .mov, .webm. После выбора мы сохраним демо-ссылку вида /uploads/demo-file-name.mp4."
               accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
               icon={Film}
               currentLabel={videoUploadLabel}
@@ -517,7 +517,7 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           </div>
 
           <div className="space-y-2 lg:col-span-2">
-            <Label htmlFor={`lesson-content-${lesson.id}`}>Content Text</Label>
+            <Label htmlFor={`lesson-content-${lesson.id}`}>Текст урока</Label>
             <Textarea
               id={`lesson-content-${lesson.id}`}
               className="min-h-[180px]"
@@ -526,7 +526,7 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           </div>
 
           <div className="space-y-2 lg:col-span-2">
-            <Label htmlFor={`lesson-transcript-${lesson.id}`}>Transcript</Label>
+            <Label htmlFor={`lesson-transcript-${lesson.id}`}>Транскрипт</Label>
             <Textarea
               id={`lesson-transcript-${lesson.id}`}
               className="min-h-[220px]"
@@ -537,9 +537,9 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           <div className="space-y-4 lg:col-span-2">
             <MockUploadDropzone
               id={`lesson-transcript-upload-${lesson.id}`}
-              title="Upload transcript file"
-              description="Можно бросить .txt, .md, .srt или .vtt, а мы сразу развернем текст внутрь transcript textarea."
-              hint="Mock mode сохранит файл как structured attachment, а содержимое положит в transcript для последующей AI generation."
+              title="Загрузить файл транскрипта"
+              description="Можно бросить .txt, .md, .srt или .vtt, а мы сразу развернем текст внутрь поля транскрипта."
+              hint="Демо-режим сохранит файл как структурированное вложение, а содержимое положит в транскрипт для последующей AI-генерации."
               accept=".txt,.md,.srt,.vtt,text/plain,text/markdown"
               icon={FileText}
               currentLabel={transcriptUploads[0]?.name ?? null}
@@ -571,9 +571,9 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
             />
 
             <MaterialsPreview
-              title="Transcript file"
+              title="Файл транскрипта"
               items={transcriptUploads}
-              emptyCopy="Transcript file пока не прикреплен. Позже сюда можно будет подключить Whisper / OpenAI / DeepSeek transcription pipeline."
+              emptyCopy="Файл транскрипта пока не прикреплен. Позже сюда можно будет подключить автоматическую транскрибацию через Whisper, OpenAI или DeepSeek."
               onRemove={(id) => {
                 form.setValue(
                   "materials",
@@ -590,12 +590,12 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
           <div className="space-y-4 lg:col-span-2">
             <MockUploadDropzone
               id={`lesson-materials-upload-${lesson.id}`}
-              title="Additional lesson materials"
-              description="Прикрепи PDF, worksheet, brief, template или любой supporting file для урока."
-              hint="Для MVP это mock upload: мы сохраняем список материалов и fake URLs, чтобы потом без боли подключить UploadThing или S3."
+              title="Дополнительные материалы урока"
+              description="Прикрепи PDF, рабочий лист, бриф, шаблон или любой дополнительный файл для урока."
+              hint="Для MVP это демо-загрузка: мы сохраняем список материалов и демо-ссылки, чтобы потом без боли подключить UploadThing или S3."
               accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.fig,.txt,.md,application/pdf"
               icon={FolderOpen}
-              currentLabel={resourceUploads.length ? `${resourceUploads.length} files` : null}
+              currentLabel={resourceUploads.length ? `${resourceUploads.length} файлов` : null}
               onUploaded={(payload) => {
                 form.setValue(
                   "materials",
@@ -619,9 +619,9 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
             />
 
             <MaterialsPreview
-              title="Attached materials"
+              title="Прикрепленные материалы"
               items={resourceUploads}
-              emptyCopy="Пока нет дополнительных материалов. Сюда можно складывать PDF, cheatsheet, template pack и другие lesson assets."
+              emptyCopy="Пока нет дополнительных материалов. Сюда можно складывать PDF, шпаргалки, наборы шаблонов и другие материалы урока."
               onRemove={(id) => {
                 form.setValue(
                   "materials",
@@ -646,10 +646,10 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
             {isSaving ? (
               <>
                 <LoaderCircle className="mr-2 size-4 animate-spin" />
-                Saving...
+                Сохраняем...
               </>
             ) : (
-              "Save lesson content"
+              "Сохранить урок"
             )}
           </PremiumButton>
 
@@ -663,12 +663,12 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
             {isGeneratingTranscript ? (
               <>
                 <LoaderCircle className="mr-2 size-4 animate-spin" />
-                Transcribing...
+                Транскрибируем...
               </>
             ) : (
               <>
                 <Mic className="mr-2 size-4" />
-                Generate transcript
+                Сгенерировать транскрипт
               </>
             )}
           </PremiumButton>
@@ -683,12 +683,12 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
             {isGeneratingAi ? (
               <>
                 <LoaderCircle className="mr-2 size-4 animate-spin" />
-                Generating...
+                Генерируем...
               </>
             ) : (
               <>
                 <Sparkles className="mr-2 size-4" />
-                Use transcript for AI generation
+                Использовать транскрипт для AI
               </>
             )}
           </PremiumButton>
@@ -777,7 +777,7 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
             <Label htmlFor={`new-lesson-title-${moduleId}`}>Название</Label>
             <Input
               id={`new-lesson-title-${moduleId}`}
-              placeholder="Lesson title"
+              placeholder="Название урока"
               {...form.register("title")}
             />
           </div>
@@ -790,15 +790,15 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`new-lesson-video-${moduleId}`}>Video URL</Label>
+            <Label htmlFor={`new-lesson-video-${moduleId}`}>URL видео</Label>
             <Input
               id={`new-lesson-video-${moduleId}`}
-              placeholder="https://youtube.com/... or /uploads/demo-video.mp4"
+              placeholder="https://youtube.com/... или /uploads/demo-video.mp4"
               {...form.register("videoUrl")}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor={`new-lesson-duration-${moduleId}`}>Duration</Label>
+            <Label htmlFor={`new-lesson-duration-${moduleId}`}>Длительность</Label>
             <Input
               id={`new-lesson-duration-${moduleId}`}
               type="number"
@@ -808,7 +808,7 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
             />
           </div>
           <div className="space-y-2 lg:col-span-2">
-            <Label htmlFor={`new-lesson-content-${moduleId}`}>Content Text</Label>
+            <Label htmlFor={`new-lesson-content-${moduleId}`}>Текст урока</Label>
             <Textarea
               id={`new-lesson-content-${moduleId}`}
               className="min-h-[180px]"
@@ -816,7 +816,7 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
             />
           </div>
           <div className="space-y-2 lg:col-span-2">
-            <Label htmlFor={`new-lesson-transcript-${moduleId}`}>Transcript</Label>
+            <Label htmlFor={`new-lesson-transcript-${moduleId}`}>Транскрипт</Label>
             <Textarea
               id={`new-lesson-transcript-${moduleId}`}
               className="min-h-[220px]"
@@ -827,8 +827,8 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
           <div className="space-y-2 lg:col-span-2">
             <MockUploadDropzone
               id={`new-lesson-video-upload-${moduleId}`}
-              title="Upload lesson video"
-              description="Можно не ждать реальное storage-подключение: для MVP builder подставит mock URL в videoUrl."
+              title="Загрузить видео урока"
+              description="Можно не ждать реальное хранилище: для MVP конструктор подставит демо-ссылку в поле видео."
               hint="Выбери или перетащи .mp4 / .mov / .webm. После сохранения урока ссылка будет храниться как /uploads/demo-file-name.ext."
               accept=".mp4,.mov,.webm,video/mp4,video/quicktime,video/webm"
               icon={Film}
@@ -845,8 +845,8 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
           <div className="space-y-4 lg:col-span-2">
             <MockUploadDropzone
               id={`new-lesson-transcript-upload-${moduleId}`}
-              title="Upload transcript file"
-              description="Закинь transcript в виде файла, а форма сама развернет текст в textarea и сохранит attachment-метаданные."
+              title="Загрузить файл транскрипта"
+              description="Загрузи транскрипт в виде файла, а форма сама развернет текст в поле и сохранит метаданные вложения."
               hint="Поддержка для MVP: .txt, .md, .srt, .vtt. Настоящую транскрибацию видео подключим позже."
               accept=".txt,.md,.srt,.vtt,text/plain,text/markdown"
               icon={FileText}
@@ -881,9 +881,9 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
             />
 
             <MaterialsPreview
-              title="Transcript file"
+              title="Файл транскрипта"
               items={transcriptUploads}
-              emptyCopy="Transcript file пока нет. После создания урока можно будет сразу запустить AI generation от сохраненного transcript."
+              emptyCopy="Файла транскрипта пока нет. После создания урока можно будет сразу запустить AI-генерацию от сохраненного транскрипта."
               onRemove={(id) => {
                 form.setValue(
                   "materials",
@@ -900,12 +900,12 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
           <div className="space-y-4 lg:col-span-2">
             <MockUploadDropzone
               id={`new-lesson-materials-upload-${moduleId}`}
-              title="Additional lesson materials"
-              description="Приложи worksheet, PDF, prompts, briefs или шаблоны, чтобы у урока сразу была полноценная asset-структура."
-              hint="Mock upload сохраняет список файлов и fake URLs. На следующем шаге сюда легко подключить UploadThing или S3."
+              title="Дополнительные материалы урока"
+              description="Приложи рабочие листы, PDF, промты, брифы или шаблоны, чтобы у урока сразу была полноценная структура материалов."
+              hint="Демо-загрузка сохраняет список файлов и демо-ссылки. На следующем шаге сюда легко подключить UploadThing или S3."
               accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.fig,.txt,.md,application/pdf"
               icon={FolderOpen}
-              currentLabel={resourceUploads.length ? `${resourceUploads.length} files` : null}
+              currentLabel={resourceUploads.length ? `${resourceUploads.length} файлов` : null}
               onUploaded={(payload) => {
                 form.setValue(
                   "materials",
@@ -929,9 +929,9 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
             />
 
             <MaterialsPreview
-              title="Attached materials"
+              title="Прикрепленные материалы"
               items={resourceUploads}
-              emptyCopy="Дополнительных материалов пока нет. Можно начать с video URL и transcript, а supporting files добавить следом."
+              emptyCopy="Дополнительных материалов пока нет. Можно начать со ссылки на видео и транскрипта, а остальные файлы добавить следом."
               onRemove={(id) => {
                 form.setValue(
                   "materials",
@@ -952,10 +952,10 @@ function NewLessonForm({ moduleId }: { moduleId: string }) {
           {isPending ? (
             <>
               <LoaderCircle className="mr-2 size-4 animate-spin" />
-              Creating lesson...
+              Создаем урок...
             </>
           ) : (
-            "Create lesson draft"
+            "Создать черновик урока"
           )}
         </PremiumButton>
       </form>
@@ -1043,7 +1043,11 @@ export function ModuleBuilderCard({
   };
 
   return (
-    <PremiumCard padding="lg" className="rounded-[2.4rem] bg-white/92 backdrop-blur-xl">
+    <PremiumCard
+      id={`module-${module.id}`}
+      padding="lg"
+      className="rounded-[2.4rem] bg-white/92 backdrop-blur-xl"
+    >
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -1051,10 +1055,16 @@ export function ModuleBuilderCard({
             <span className="text-sm text-black/42">
               {module.lessons.length} уроков
             </span>
+            {module.practice ? <Badge variant="subtle">Итог модуля готов</Badge> : null}
           </div>
           <h3 className="mt-4 text-3xl font-semibold tracking-tight text-black">
             {module.title}
           </h3>
+          {module.practice ? (
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-black/48">
+              Итог модуля: {module.practice.title}
+            </p>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">

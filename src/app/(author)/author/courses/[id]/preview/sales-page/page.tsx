@@ -1,5 +1,6 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Eye, MonitorSmartphone } from "lucide-react";
+import { Eye, Lock, MonitorSmartphone } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { CourseSalesPageRenderer } from "@/components/sales-page/course-sales-page-renderer";
 import { Breadcrumbs } from "@/components/premium/breadcrumbs";
@@ -9,6 +10,70 @@ import { SectionHeader } from "@/components/premium/section-header";
 import { Badge } from "@/components/ui/badge";
 import { requireUserRole } from "@/server/auth/session";
 import { getCourseStudioData } from "@/server/sales-page/queries";
+
+function LockedPreviewChrome() {
+  return (
+    <div className="overflow-hidden rounded-[2rem] border border-black/8 bg-white shadow-[0_18px_60px_rgba(15,23,42,0.05)]">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-black/8 px-5 py-4">
+        <div className="flex items-center gap-4">
+          <Image
+            src="/nowa-school-black-logo.png"
+            alt="nowa school"
+            width={3470}
+            height={1076}
+            className="h-8 w-auto sm:h-9"
+            priority
+          />
+          <div className="hidden items-center gap-3 lg:flex">
+            {["Каталог", "Авторы", "Кейсы", "Гайды"].map((item) => (
+              <span
+                key={item}
+                className="text-sm font-medium text-black/56"
+              >
+                {item}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="hidden rounded-full bg-[#f4f5fb] px-4 py-2 text-sm font-medium text-black/56 sm:inline-flex">
+            Войти
+          </span>
+          <span className="rounded-full bg-[#3d3bff] px-4 py-2 text-sm font-medium text-white">
+            Начать бесплатно
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/6 bg-[#fbfbfd] px-5 py-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-black/62">
+          <Lock className="size-4 text-[#3d3bff]" />
+          Системный хедер — зафиксирован
+        </div>
+        <p className="text-sm text-black/42">
+          Автор редактирует только контент между хедером и футером
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function LockedPreviewFooter() {
+  return (
+    <div className="mt-5 overflow-hidden rounded-[1.8rem] border border-black/8 bg-white/92 px-5 py-4 shadow-[0_18px_60px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm font-medium text-black/62">
+          <Lock className="size-4 text-[#3d3bff]" />
+          Системный футер
+        </div>
+        <p className="text-sm text-black/42">
+          Общий футер платформы рендерится автоматически
+        </p>
+      </div>
+    </div>
+  );
+}
 
 type SalesPagePreviewProps = {
   params: Promise<{ id: string }>;
@@ -42,8 +107,11 @@ export default async function AuthorSalesPagePreview({
       <Breadcrumbs
         items={[
           { label: "Авторский кабинет", href: "/author" },
-          { label: course.title, href: `/author/courses/${course.id}/studio` },
-          { label: "Preview" },
+          {
+            label: course.title,
+            href: `/author/courses/${course.id}/studio/creative-site`,
+          },
+          { label: "Предпросмотр" },
         ]}
       />
 
@@ -53,13 +121,13 @@ export default async function AuthorSalesPagePreview({
       >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <Badge variant="primary">Sales Page Preview</Badge>
+            <Badge variant="primary">Предпросмотр продающей страницы</Badge>
             <h1 className="mt-5 text-4xl font-semibold tracking-tight text-black sm:text-5xl">
               {course.title}
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-8 text-black/56">
-              Отдельный preview author-side, где можно быстро проверить mobile и
-              desktop перед модерацией и публикацией.
+              Отдельный авторский предпросмотр, где можно быстро проверить
+              мобильную и десктопную версию перед модерацией и публикацией.
             </p>
           </div>
 
@@ -69,13 +137,13 @@ export default async function AuthorSalesPagePreview({
               tone="secondary"
               className="h-12 px-5"
             >
-              <Link href={`/author/courses/${course.id}/studio?tab=sales-page`}>
+              <Link href={`/author/courses/${course.id}/studio/creative-site`}>
                 <Eye className="mr-2 size-4" />
-                Вернуться в Studio
+                Вернуться в студию
               </Link>
             </PremiumButton>
             <PremiumButton asChild className="h-12 px-5">
-              <Link href={`/courses/${course.slug}`}>Открыть public route</Link>
+              <Link href={`/courses/${course.slug}`}>Открыть публичную страницу</Link>
             </PremiumButton>
           </div>
         </div>
@@ -87,18 +155,22 @@ export default async function AuthorSalesPagePreview({
           className="rounded-[2.5rem] bg-white/92 backdrop-blur-xl"
         >
           <SectionHeader
-            eyebrow="Desktop"
-            title="Desktop preview"
-            description="Так страница выглядит в основном режиме."
+            eyebrow="Десктоп"
+            title="Предпросмотр на компьютере"
+            description="Так страница выглядит вместе с системным хедером и системным футером."
           />
           <div className="mt-6">
-            <CourseSalesPageRenderer
-              course={course}
-              salesPage={salesPage}
-              mode="preview"
-              primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
-              secondaryHref={`/courses/${course.slug}#curriculum`}
-            />
+            <div className="space-y-5">
+              <LockedPreviewChrome />
+              <CourseSalesPageRenderer
+                course={course}
+                salesPage={salesPage}
+                mode="preview"
+                primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
+                secondaryHref={`/courses/${course.slug}#curriculum`}
+              />
+              <LockedPreviewFooter />
+            </div>
           </div>
         </PremiumCard>
 
@@ -109,20 +181,24 @@ export default async function AuthorSalesPagePreview({
           <div className="flex items-center gap-2">
             <MonitorSmartphone className="size-4 text-[#3d3bff]" />
             <SectionHeader
-              eyebrow="Mobile"
-              title="Mobile preview"
-              description="Суженная версия canvas для быстрой визуальной проверки."
+              eyebrow="Мобильная версия"
+              title="Предпросмотр на телефоне"
+              description="Суженная версия canvas для проверки мобильного контента внутри системной оболочки."
             />
           </div>
           <div className="mt-6">
-            <CourseSalesPageRenderer
-              course={course}
-              salesPage={salesPage}
-              mode="preview"
-              deviceMode="mobile"
-              primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
-              secondaryHref={`/courses/${course.slug}#curriculum`}
-            />
+            <div className="space-y-5">
+              <LockedPreviewChrome />
+              <CourseSalesPageRenderer
+                course={course}
+                salesPage={salesPage}
+                mode="preview"
+                deviceMode="mobile"
+                primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
+                secondaryHref={`/courses/${course.slug}#curriculum`}
+              />
+              <LockedPreviewFooter />
+            </div>
           </div>
         </PremiumCard>
       </div>

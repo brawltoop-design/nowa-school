@@ -33,6 +33,31 @@ function statusTone(status: string) {
   return status === "ISSUED" || status === "APPROVED" ? "primary" : "subtle";
 }
 
+function statusLabel(status: string) {
+  switch (status) {
+    case "DRAFT":
+      return "Черновик";
+    case "SUBMITTED":
+      return "Отправлено";
+    case "APPROVED":
+      return "Одобрено";
+    case "REJECTED":
+      return "Отклонено";
+    case "NEEDS_REVISION":
+      return "Нужна доработка";
+    case "PENDING":
+      return "На проверке";
+    case "ISSUED":
+      return "Выдан";
+    case "REVOKED":
+      return "Отозван";
+    case "EXPIRED":
+      return "Истек";
+    default:
+      return status;
+  }
+}
+
 export default async function StudentCertificatePage({
   params,
 }: CertificatePageProps) {
@@ -69,7 +94,7 @@ export default async function StudentCertificatePage({
         items={[
           { label: "Кабинет ученика", href: "/learn" },
           { label: course.title, href: `/learn/${course.id}` },
-          { label: "nowa school Verified Skills" },
+          { label: "nowa school Проверенные навыки" },
         ]}
       />
 
@@ -78,7 +103,7 @@ export default async function StudentCertificatePage({
           padding="lg"
           className="rounded-[2.6rem] bg-white/94 shadow-[0_24px_80px_rgba(15,23,42,0.06)]"
         >
-          <Badge variant="primary">nowa school Verified Skills</Badge>
+          <Badge variant="primary">nowa school Проверенные навыки</Badge>
           <h1 className="mt-5 max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-black sm:text-5xl">
             Сертификат за практический проект и проверенный навык
           </h1>
@@ -95,7 +120,7 @@ export default async function StudentCertificatePage({
               </p>
             </div>
             <div className="rounded-[1.7rem] bg-[#f6f7fa] px-5 py-5">
-              <p className="text-sm text-black/42">Quiz score</p>
+              <p className="text-sm text-black/42">Балл теста</p>
               <p className="mt-2 text-3xl font-semibold text-black">
                 {progress.bestQuizScore}%
               </p>
@@ -115,7 +140,7 @@ export default async function StudentCertificatePage({
         >
           <ShieldCheck className="size-6 text-[#9ea7ff]" />
           <h2 className="mt-5 text-2xl font-semibold tracking-tight">
-            Public verification
+            Публичная верификация
           </h2>
           <p className="mt-3 text-sm leading-7 text-white/62">
             Главный источник истины - публичная страница `/cert/NSAI-...`, а PDF
@@ -138,9 +163,9 @@ export default async function StudentCertificatePage({
       <div className="grid gap-6 xl:grid-cols-[0.82fr_1.18fr]">
         <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94">
           <SectionHeader
-            eyebrow="Requirements"
+            eyebrow="Требования"
             title="Требования к выдаче"
-            description="Completion можно получить после 90% прогресса и quiz score 80%+. Verified Skill требует проект."
+            description="Сертификат о завершении можно получить после 90% прогресса и балла теста 80%+. Сертификат за проверенный навык требует проект."
           />
           <div className="mt-6 space-y-3">
             {requirements.map((requirement) => (
@@ -174,29 +199,29 @@ export default async function StudentCertificatePage({
               className="mt-6 h-12 w-full disabled:pointer-events-none disabled:opacity-45"
             >
               <Award className="mr-2 size-4" />
-              Получить Completion certificate
+              Получить сертификат о завершении
             </PremiumButton>
           </form>
         </PremiumCard>
 
         <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94">
           <SectionHeader
-            eyebrow="Final project"
-            title="Отправка проекта на Verified Skill"
-            description="Добавь ссылки на рабочий проект, demo video или repository. Автор проверит проект по rubric."
+            eyebrow="Финальный проект"
+            title="Отправка проекта на проверенный навык"
+            description="Добавь ссылки на рабочий проект, демо-видео или репозиторий. Автор проверит проект по критериям."
           />
 
           {submission ? (
             <div className="mt-6 rounded-[1.7rem] border border-black/8 bg-[#f6f7fa] p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-black/42">Текущий submission</p>
+                  <p className="text-sm text-black/42">Текущая заявка</p>
                   <h3 className="mt-2 text-2xl font-semibold tracking-tight text-black">
                     {submission.projectTitle}
                   </h3>
                 </div>
                 <Badge variant={statusTone(submission.status)}>
-                  {submission.status}
+                  {statusLabel(submission.status)}
                 </Badge>
               </div>
               <p className="mt-4 text-sm leading-7 text-black/58">
@@ -208,7 +233,7 @@ export default async function StudentCertificatePage({
                   target="_blank"
                   className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#eef0ff]"
                 >
-                  Project
+                  Проект
                   <ExternalLink className="size-4" />
                 </Link>
                 {submission.demoVideoUrl ? (
@@ -217,7 +242,7 @@ export default async function StudentCertificatePage({
                     target="_blank"
                     className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#eef0ff]"
                   >
-                    Demo
+                    Демо
                     <ExternalLink className="size-4" />
                   </Link>
                 ) : null}
@@ -227,7 +252,7 @@ export default async function StudentCertificatePage({
                     target="_blank"
                     className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#eef0ff]"
                   >
-                    Repository
+                    Репозиторий
                     <ExternalLink className="size-4" />
                   </Link>
                 ) : null}
@@ -237,7 +262,7 @@ export default async function StudentCertificatePage({
 
           {pendingCertificate?.latestFeedback ? (
             <div className="mt-5 rounded-[1.6rem] border border-[#3d3bff]/15 bg-[#eef0ff] p-5">
-              <p className="text-sm font-medium text-[#3432dc]">Feedback</p>
+              <p className="text-sm font-medium text-[#3432dc]">Обратная связь</p>
               <p className="mt-2 text-sm leading-7 text-black/64">
                 {pendingCertificate.latestFeedback}
               </p>
@@ -274,14 +299,14 @@ export default async function StudentCertificatePage({
               <input
                 name="demoVideoUrl"
                 defaultValue={submission?.demoVideoUrl ?? ""}
-                placeholder="Demo video URL"
+                placeholder="Ссылка на демо-видео"
                 type="url"
                 className="h-[52px] rounded-2xl border border-black/10 bg-[#f8f8f8] px-5 text-sm outline-none focus:border-[#3d3bff]/40 focus:bg-white"
               />
               <input
                 name="repositoryUrl"
                 defaultValue={submission?.repositoryUrl ?? ""}
-                placeholder="Repository URL"
+                placeholder="Ссылка на репозиторий"
                 type="url"
                 className="h-[52px] rounded-2xl border border-black/10 bg-[#f8f8f8] px-5 text-sm outline-none focus:border-[#3d3bff]/40 focus:bg-white"
               />
@@ -293,7 +318,7 @@ export default async function StudentCertificatePage({
             />
             <PremiumButton type="submit" className="h-12 justify-self-start px-6">
               <Send className="mr-2 size-4" />
-              Submit for review
+              Отправить на проверку
             </PremiumButton>
           </form>
         </PremiumCard>
@@ -301,9 +326,9 @@ export default async function StudentCertificatePage({
 
       <div className="space-y-6">
         <SectionHeader
-          eyebrow="Credentials"
+          eyebrow="Сертификаты"
           title="Мои сертификаты по курсу"
-          description="Здесь видны completion, verified skill и expert reviewed records."
+          description="Здесь видны completion, verified skill и записи после экспертной проверки."
         />
 
         {certificates.length ? (
@@ -327,7 +352,7 @@ export default async function StudentCertificatePage({
                     </p>
                   </div>
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-3 text-center">
-                    <p className="text-xs text-black/42">Score</p>
+                    <p className="text-xs text-black/42">Балл</p>
                     <p className="mt-1 text-2xl font-semibold text-black">
                       {certificate.score}
                     </p>

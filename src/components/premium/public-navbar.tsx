@@ -99,7 +99,7 @@ export function PublicNavbar() {
       <div className="sticky top-0 z-40">
         <div className="border-b border-black/10 bg-[#f8ffc0]">
           <div className="app-shell flex min-h-12 flex-wrap items-center justify-between gap-3 py-3 text-sm font-medium text-black">
-            <p>Starter kit бесплатно: 30 промтов и шаблон первого лендинга</p>
+            <p>Стартовый набор бесплатно: 30 промтов и шаблон первого лендинга</p>
             <Link
               href="/free"
               className="inline-flex items-center transition duration-200 hover:opacity-70"

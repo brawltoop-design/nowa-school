@@ -19,9 +19,9 @@ import { StaggerGrid } from "@/components/premium/stagger-grid";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Bootcamp nowa school - 5 дней до первого AI-продукта",
+  title: "Буткемп nowa school - 5 дней до первого AI-продукта",
   description:
-    "Практический AI bootcamp: лендинг, AI-агент, MVP-логика, публикация и понятный план развития без громких обещаний.",
+    "Практический AI-буткемп: лендинг, AI-агент, MVP-логика, публикация и понятный план развития без громких обещаний.",
 };
 
 const bootcampDays = [
@@ -47,7 +47,7 @@ const bootcampDays = [
   },
   {
     day: "День 5",
-    title: "Публикация и roadmap",
+    title: "Публикация и план развития",
     text: "Фиксируем результат, собираем материалы и планируем следующий спринт.",
   },
 ];
@@ -55,8 +55,8 @@ const bootcampDays = [
 const results = [
   "готовая страница проекта",
   "AI-агент или автоматизация",
-  "prompt pack под твой сценарий",
-  "понятный roadmap улучшений",
+  "набор промтов под твой сценарий",
+  "понятный план улучшений",
   "демо, которое можно показать аудитории или команде",
   "чеклист качества перед публикацией",
 ];
@@ -69,13 +69,13 @@ export default function BootcampPage() {
           <AnimatedSection className="space-y-7">
             <div className="flex flex-wrap gap-2">
               <Badge variant="primary">3-5 дней</Badge>
-              <Badge variant="subtle">AI-first sprint</Badge>
+              <Badge variant="subtle">AI-first спринт</Badge>
               <Badge variant="subtle">практический результат</Badge>
             </div>
 
             <div className="space-y-5">
               <h1 className="max-w-5xl text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl lg:text-7xl">
-                Собери первый AI-продукт в формате короткого bootcamp
+                Собери первый AI-продукт в формате короткого буткемпа
               </h1>
               <p className="max-w-3xl text-lg leading-8 text-black/62 sm:text-xl">
                 Каждый день дает видимый артефакт: оффер, лендинг, AI-агент,
@@ -86,12 +86,12 @@ export default function BootcampPage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <PremiumButton asChild className="h-[52px] px-7 text-base">
                 <Link href="/free">
-                  Начать со starter kit
+                  Начать со стартового набора
                   <ArrowUpRight className="ml-2 size-4" />
                 </Link>
               </PremiumButton>
               <PremiumButton asChild tone="secondary" className="h-[52px] px-7 text-base">
-                <Link href="/telegram">Следить в Telegram</Link>
+                <Link href="/telegram">Следить в Телеграме</Link>
               </PremiumButton>
             </div>
           </AnimatedSection>
@@ -101,7 +101,7 @@ export default function BootcampPage() {
               <div className="rounded-[2rem] border border-white/10 bg-white/8 p-6">
                 <CalendarDays className="size-6 text-[#9ea7ff]" />
                 <h2 className="mt-5 text-3xl font-semibold tracking-tight">
-                  Sprint board
+                  План спринта
                 </h2>
                 <div className="mt-6 space-y-3">
                   {bootcampDays.slice(0, 3).map((item) => (
@@ -125,7 +125,7 @@ export default function BootcampPage() {
           <SectionHeader
             eyebrow="Программа"
             title="Пять коротких шагов вместо бесконечного курса"
-            description="Bootcamp подходит, если хочется быстро перейти от идеи к демо и понять, что улучшать дальше."
+            description="Буткемп подходит, если хочется быстро перейти от идеи к демо и понять, что улучшать дальше."
           />
           <StaggerGrid className="mt-8 grid gap-5 lg:grid-cols-5">
             {bootcampDays.map((item) => (
@@ -189,8 +189,8 @@ export default function BootcampPage() {
             </div>
           </div>
           <LeadCaptureForm
-            title="Лист ожидания bootcamp"
-            description="Оставь контакт, чтобы получить starter kit и уведомление о следующем потоке."
+            title="Лист ожидания буткемпа"
+            description="Оставь контакт, чтобы получить стартовый набор и уведомление о следующем потоке."
             buttonLabel="Получить приглашение"
             className="border-white/10 bg-white text-black"
           />
@@ -206,12 +206,12 @@ export default function BootcampPage() {
                   Хочешь начать мягче?
                 </h2>
                 <p className="mt-3 max-w-2xl text-base leading-8 text-black/58">
-                  Забери бесплатный starter kit и попробуй первые prompts до участия в bootcamp.
+                  Забери бесплатный стартовый набор и попробуй первые промты до участия в буткемпе.
                 </p>
               </div>
               <PremiumButton asChild className="h-[52px] px-7 text-base">
                 <Link href="/free">
-                  Забрать starter kit
+                  Забрать стартовый набор
                   <Rocket className="ml-2 size-4" />
                 </Link>
               </PremiumButton>

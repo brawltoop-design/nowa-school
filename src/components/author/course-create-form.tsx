@@ -38,7 +38,7 @@ export function CourseCreateForm() {
       currency: "USD",
       coverUrl: "",
       level: "Intermediate",
-      language: "English",
+      language: "Russian",
     },
   });
 
@@ -78,7 +78,9 @@ export function CourseCreateForm() {
         return;
       }
 
-      window.location.assign(`/author/courses/${result.data?.courseId}/studio?tab=overview`);
+      window.location.assign(
+        `/author/courses/${result.data?.courseId}/studio/overview`,
+      );
     });
   });
 
@@ -95,7 +97,7 @@ export function CourseCreateForm() {
           <Label htmlFor="title">Название курса</Label>
           <Input
             id="title"
-            placeholder="AI Course Systems"
+            placeholder="Системы AI-курсов"
             {...form.register("title")}
           />
           {form.formState.errors.title ? (
@@ -118,13 +120,13 @@ export function CourseCreateForm() {
             </p>
           ) : (
             <p className="text-xs text-black/42">
-              Будет использоваться в URL курса.
+              Будет использоваться в ссылке курса.
             </p>
           )}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="coverUrl">Cover URL</Label>
+          <Label htmlFor="coverUrl">URL обложки</Label>
           <Input
             id="coverUrl"
             placeholder="https://..."
@@ -160,7 +162,13 @@ export function CourseCreateForm() {
           >
             {courseCategoryOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {{
+                  AI: "AI",
+                  Design: "Дизайн",
+                  Marketing: "Маркетинг",
+                  Business: "Бизнес",
+                  "Creator Economy": "Creator Economy",
+                }[option]}
               </option>
             ))}
           </select>
@@ -208,7 +216,12 @@ export function CourseCreateForm() {
           >
             {courseLevelOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {{
+                  Beginner: "Начальный",
+                  "Advanced Beginner": "Начальный плюс",
+                  Intermediate: "Средний",
+                  Advanced: "Продвинутый",
+                }[option]}
               </option>
             ))}
           </select>
@@ -223,7 +236,10 @@ export function CourseCreateForm() {
           >
             {courseLanguageOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {{
+                  English: "Английский",
+                  Russian: "Русский",
+                }[option]}
               </option>
             ))}
           </select>

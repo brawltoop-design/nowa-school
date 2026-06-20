@@ -111,26 +111,26 @@ export function LessonPracticeWorkspace({
           className="rounded-[2.3rem] border-black/6 bg-white/94 shadow-[0_20px_60px_rgba(15,23,42,0.05)]"
         >
           <SectionHeader
-            eyebrow="Practice workspace"
+            eyebrow="Практика"
             title="Конспект и закрепление"
-            description="Здесь ученик может держать личные заметки, смотреть AI-summary и быстро возвращаться к сути урока."
+            description="Здесь ученик может держать личные заметки, смотреть AI-выжимку и быстро возвращаться к сути урока."
           />
 
           <div className="mt-6 grid gap-4 md:grid-cols-2">
             <div className="rounded-[1.7rem] bg-[#f6f7fa] px-5 py-5">
               <div className="flex items-center gap-2 text-sm font-medium text-black">
                 <Sparkles className="size-4 text-[#3d3bff]" />
-                AI recap
+                AI-выжимка
               </div>
               <p className="mt-3 text-sm leading-7 text-black/62">
-                {aiSummary ?? "Сводка по уроку появится здесь, когда автор добавит AI-summary."}
+                {aiSummary ?? "Сводка по уроку появится здесь, когда автор добавит AI-выжимку."}
               </p>
             </div>
 
             <div className="rounded-[1.7rem] bg-[#f6f7fa] px-5 py-5">
               <div className="flex items-center gap-2 text-sm font-medium text-black">
                 <CheckCheck className="size-4 text-[#3d3bff]" />
-                Practice status
+                Статус практики
               </div>
               <p className="mt-3 text-3xl font-semibold tracking-tight text-black">
                 {checklistProgress}%
@@ -170,7 +170,7 @@ export function LessonPracticeWorkspace({
               <summary className="cursor-pointer list-none px-5 py-4 text-sm font-medium text-black">
                 <span className="inline-flex items-center gap-2">
                   <FileText className="size-4 text-[#3d3bff]" />
-                  Полный transcript урока
+                  Полный транскрипт урока
                 </span>
               </summary>
               <div className="border-t border-black/6 px-5 py-5">
@@ -189,7 +189,7 @@ export function LessonPracticeWorkspace({
           className="rounded-[2.3rem] border-black/6 bg-white/94 shadow-[0_20px_60px_rgba(15,23,42,0.05)]"
         >
           <SectionHeader
-            eyebrow="Assignment"
+            eyebrow="Задание"
             title={assignment?.title ?? "Практическое задание"}
             description={
               assignment?.description ??
@@ -212,20 +212,20 @@ export function LessonPracticeWorkspace({
                       {item.criterion}
                     </span>
                   </div>
-                  <Badge variant="subtle">{item.points} pts</Badge>
+                  <Badge variant="subtle">{item.points} баллов</Badge>
                 </div>
               ))}
             </div>
           ) : (
             <div className="mt-6 rounded-[1.5rem] bg-[#f6f7fa] px-4 py-4 text-sm leading-7 text-black/56">
-              Добавь через builder description, rubric и passing score, и этот блок
-              сразу станет полноценным student assignment card.
+              Добавь через конструктор описание, рубрику и проходной балл, и этот блок
+              сразу станет полноценной карточкой задания для ученика.
             </div>
           )}
 
           {assignment?.passingScore ? (
             <div className="mt-5 inline-flex rounded-full bg-[#eef0ff] px-4 py-3 text-sm font-medium text-[#3d3bff]">
-              Passing score: {assignment.passingScore}%
+              Проходной балл: {assignment.passingScore}%
             </div>
           ) : null}
         </PremiumCard>
@@ -235,7 +235,7 @@ export function LessonPracticeWorkspace({
           className="rounded-[2.3rem] border-black/6 bg-white/94 shadow-[0_20px_60px_rgba(15,23,42,0.05)]"
         >
           <SectionHeader
-            eyebrow="Checklist"
+            eyebrow="Чеклист"
             title="Что сделать после урока"
             description="Минимальный action plan, чтобы материал превращался в результат."
           />
@@ -293,7 +293,7 @@ export function LessonPracticeWorkspace({
           >
             <div className="flex items-start justify-between gap-4">
               <div>
-                <Badge variant="primary">Quest</Badge>
+                <Badge variant="primary">Квест</Badge>
                 <h3 className="mt-4 text-2xl font-semibold tracking-tight text-black">
                   {quest.title}
                 </h3>
@@ -308,7 +308,7 @@ export function LessonPracticeWorkspace({
             </div>
 
             <div className="mt-6 inline-flex rounded-full bg-[#eef0ff] px-4 py-3 text-sm font-medium text-[#3d3bff]">
-              +{quest.rewardPoints} points за выполнение
+              +{quest.rewardPoints} очков за выполнение
             </div>
           </PremiumCard>
         ) : null}

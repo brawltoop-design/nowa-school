@@ -20,7 +20,7 @@ export async function POST(request: Request) {
         session.user.role !== UserRole.ADMIN)
     ) {
       return NextResponse.json(
-        { message: "Unauthorized." },
+        { message: "Доступ запрещен." },
         { status: 401 },
       );
     }
@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
     if (!lesson) {
       return NextResponse.json(
-        { message: "Lesson not found." },
+        { message: "Урок не найден." },
         { status: 404 },
       );
     }
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       lesson.module.course.authorId !== session.user.id
     ) {
       return NextResponse.json(
-        { message: "Forbidden." },
+        { message: "Недостаточно прав." },
         { status: 403 },
       );
     }
@@ -91,12 +91,12 @@ export async function POST(request: Request) {
       ...result,
       demo: result.provider === "mock",
       warning:
-        result.provider === "mock" ? "Demo transcript generated." : null,
+        result.provider === "mock" ? "Сгенерирован демо-транскрипт." : null,
     });
   } catch {
     return NextResponse.json(
       {
-        message: "Не удалось сгенерировать transcript.",
+        message: "Не удалось сгенерировать транскрипт.",
       },
       { status: 500 },
     );

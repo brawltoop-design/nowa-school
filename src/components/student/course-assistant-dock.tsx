@@ -80,9 +80,9 @@ export function CourseAssistantDock({
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant="subtle">AI hidden</Badge>
+                <Badge variant="subtle">AI скрыт</Badge>
                 <p className="text-sm text-black/52">
-                  Lesson screen сейчас в чистом full-focus режиме.
+                  Экран урока сейчас в чистом режиме фокуса.
                 </p>
               </div>
             </div>

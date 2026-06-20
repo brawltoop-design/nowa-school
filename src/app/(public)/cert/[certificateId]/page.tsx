@@ -45,7 +45,7 @@ function asCriteria(value: unknown) {
               ? record.criterion
               : typeof record.title === "string"
                 ? record.title
-                : "Criteria";
+                : "Критерий";
 
           return {
             criterion,
@@ -74,7 +74,7 @@ export async function generateMetadata({
   return {
     title: certificate
       ? `${certificate.title} - ${certificate.student.name}`
-      : "Certificate not found",
+      : "Сертификат не найден",
     description: certificate?.description,
   };
 }
@@ -129,19 +129,19 @@ export default async function PublicCertificatePage({
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               <div className="rounded-[1.7rem] bg-[#f6f7fa] px-5 py-5">
-                <p className="text-sm text-black/42">Student</p>
+                <p className="text-sm text-black/42">Ученик</p>
                 <p className="mt-2 text-xl font-semibold text-black">
                   {certificate.student.name}
                 </p>
               </div>
               <div className="rounded-[1.7rem] bg-[#f6f7fa] px-5 py-5">
-                <p className="text-sm text-black/42">Score</p>
+                <p className="text-sm text-black/42">Балл</p>
                 <p className="mt-2 text-3xl font-semibold text-black">
                   {certificate.score}
                 </p>
               </div>
               <div className="rounded-[1.7rem] bg-[#f6f7fa] px-5 py-5">
-                <p className="text-sm text-black/42">Issued</p>
+                <p className="text-sm text-black/42">Выдан</p>
                 <p className="mt-2 text-xl font-semibold text-black">
                   {format(certificate.issuedAt, "d MMM yyyy", { locale: ru })}
                 </p>
@@ -158,7 +158,7 @@ export default async function PublicCertificatePage({
                 <ShieldCheck className="size-6 text-[#9ea7ff]" />
               </div>
               <div>
-                <p className="text-sm text-white/52">Credential ID</p>
+                <p className="text-sm text-white/52">ID сертификата</p>
                 <p className="font-semibold tracking-tight">
                   {certificate.certificateId}
                 </p>
@@ -169,7 +169,7 @@ export default async function PublicCertificatePage({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={qrCodeUrl}
-                alt={`QR code for ${certificate.certificateId}`}
+                alt={`QR-код для ${certificate.certificateId}`}
                 className="mx-auto size-48 rounded-2xl"
               />
             </div>
@@ -180,7 +180,7 @@ export default async function PublicCertificatePage({
                 className="h-12 bg-white text-black hover:bg-white/90"
               >
                 <Link href={verificationUrl}>
-                  Verify
+                  Проверить
                   <BadgeCheck className="ml-2 size-4" />
                 </Link>
               </PremiumButton>
@@ -190,7 +190,7 @@ export default async function PublicCertificatePage({
                 className="h-12 bg-white/10 text-white hover:bg-white/15"
               >
                 <Link href={`/cert/${certificate.certificateId}/pdf`}>
-                  Download PDF
+                  Скачать PDF
                   <Download className="ml-2 size-4" />
                 </Link>
               </PremiumButton>
@@ -200,7 +200,7 @@ export default async function PublicCertificatePage({
                 className="h-12 bg-white/10 text-white hover:bg-white/15"
               >
                 <Link href={linkedInUrl} target="_blank">
-                  Add to LinkedIn
+                  Добавить в LinkedIn
                   <ArrowUpRight className="ml-2 size-4" />
                 </Link>
               </PremiumButton>
@@ -211,21 +211,21 @@ export default async function PublicCertificatePage({
         <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
           <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94">
             <SectionHeader
-              eyebrow="Course"
+              eyebrow="Курс"
               title={certificate.course.title}
-              description={`Author: ${certificate.author.name}. Track: ${certificate.track}.`}
+              description={`Автор: ${certificate.author.name}. Трек: ${certificate.track}.`}
             />
             <div className="mt-6 flex flex-wrap gap-3">
               <PremiumButton asChild tone="secondary" className="h-12 px-5">
                 <Link href={`/courses/${certificate.course.slug}`}>
-                  Course page
+                  Страница курса
                   <ArrowUpRight className="ml-2 size-4" />
                 </Link>
               </PremiumButton>
               {certificate.projectUrl ? (
                 <PremiumButton asChild tone="secondary" className="h-12 px-5">
                   <Link href={certificate.projectUrl} target="_blank">
-                    Project
+                    Проект
                     <ExternalLink className="ml-2 size-4" />
                   </Link>
                 </PremiumButton>
@@ -233,7 +233,7 @@ export default async function PublicCertificatePage({
               {certificate.demoVideoUrl ? (
                 <PremiumButton asChild tone="secondary" className="h-12 px-5">
                   <Link href={certificate.demoVideoUrl} target="_blank">
-                    Demo video
+                    Демо-видео
                     <Video className="ml-2 size-4" />
                   </Link>
                 </PremiumButton>
@@ -241,7 +241,7 @@ export default async function PublicCertificatePage({
               {certificate.repositoryUrl ? (
                 <PremiumButton asChild tone="secondary" className="h-12 px-5">
                   <Link href={certificate.repositoryUrl} target="_blank">
-                    Repository
+                    Репозиторий
                     <Code2 className="ml-2 size-4" />
                   </Link>
                 </PremiumButton>
@@ -251,7 +251,7 @@ export default async function PublicCertificatePage({
 
           <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94">
             <SectionHeader
-              eyebrow="Skills"
+              eyebrow="Навыки"
               title="Проверенные навыки"
               description="Навыки и критерии хранятся в JSON, чтобы позже перейти к Open Badges 3.0."
             />
@@ -282,7 +282,7 @@ export default async function PublicCertificatePage({
                     {item.criterion}
                   </h3>
                   {item.points ? (
-                    <Badge variant="subtle">{item.points} pts</Badge>
+                    <Badge variant="subtle">{item.points} баллов</Badge>
                   ) : null}
                 </div>
                 {item.description ? (
@@ -320,9 +320,9 @@ export default async function PublicCertificatePage({
 
             <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94">
               <SectionHeader
-                eyebrow="Reviews"
+                eyebrow="Проверки"
                 title="История проверки"
-                description="Feedback автора, эксперта или администратора."
+                description="Обратная связь автора, эксперта или администратора."
               />
               <div className="mt-6 space-y-3">
                 {certificate.reviews.map((review) => (

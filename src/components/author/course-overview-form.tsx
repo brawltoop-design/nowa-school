@@ -26,6 +26,26 @@ type CourseOverviewFormProps = {
   course: AuthorBuilderCourse;
 };
 
+const courseLevelLabels = {
+  Beginner: "Начальный",
+  "Advanced Beginner": "Начальный плюс",
+  Intermediate: "Средний",
+  Advanced: "Продвинутый",
+} as const;
+
+const courseLanguageLabels = {
+  English: "Английский",
+  Russian: "Русский",
+} as const;
+
+const courseCategoryLabels = {
+  AI: "AI",
+  Design: "Дизайн",
+  Marketing: "Маркетинг",
+  Business: "Бизнес",
+  "Creator Economy": "Creator Economy",
+} as const;
+
 export function CourseOverviewForm({ course }: CourseOverviewFormProps) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
@@ -110,8 +130,8 @@ export function CourseOverviewForm({ course }: CourseOverviewFormProps) {
             {...form.register("status")}
             className="flex h-12 w-full rounded-2xl border border-black/10 bg-[#f6f6f6] px-4 py-3 text-sm text-foreground outline-none transition duration-200 focus:border-black/20 focus:bg-white focus:ring-2 focus:ring-black/5"
           >
-            <option value="DRAFT">DRAFT</option>
-            <option value="PUBLISHED">PUBLISHED</option>
+            <option value="DRAFT">Черновик</option>
+            <option value="PUBLISHED">Опубликован</option>
           </select>
         </div>
 
@@ -134,14 +154,14 @@ export function CourseOverviewForm({ course }: CourseOverviewFormProps) {
           >
             {courseCategoryOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {courseCategoryLabels[option]}
               </option>
             ))}
           </select>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="coverUrl">Cover URL</Label>
+          <Label htmlFor="coverUrl">URL обложки</Label>
           <Input id="coverUrl" {...form.register("coverUrl")} />
           {form.formState.errors.coverUrl ? (
             <p className="text-sm text-red-500">
@@ -186,7 +206,7 @@ export function CourseOverviewForm({ course }: CourseOverviewFormProps) {
           >
             {courseLevelOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {courseLevelLabels[option]}
               </option>
             ))}
           </select>
@@ -201,7 +221,7 @@ export function CourseOverviewForm({ course }: CourseOverviewFormProps) {
           >
             {courseLanguageOptions.map((option) => (
               <option key={option} value={option}>
-                {option}
+                {courseLanguageLabels[option]}
               </option>
             ))}
           </select>

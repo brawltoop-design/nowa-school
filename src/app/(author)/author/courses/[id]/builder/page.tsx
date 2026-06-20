@@ -9,5 +9,5 @@ export default async function AuthorCourseBuilderRedirect({
 }: AuthorCourseBuilderRedirectProps) {
   const { id } = await params;
 
-  redirect(`/author/courses/${id}/studio?tab=curriculum`);
+  redirect(`/author/courses/${id}/studio/lessons`);
 }

@@ -165,12 +165,12 @@ export function MockUploadDropzone({
           {isUploading ? (
             <>
               <LoaderCircle className="mr-2 size-4 animate-spin" />
-              Uploading...
+              Загружаем...
             </>
           ) : (
             <>
               <Upload className="mr-2 size-4" />
-              Choose file
+              Выбрать файл
             </>
           )}
         </PremiumButton>
@@ -178,7 +178,7 @@ export function MockUploadDropzone({
 
       <div className="mt-5 rounded-[1.6rem] border border-dashed border-black/8 bg-[#fbfbfd] px-5 py-6">
         <p className="text-sm font-medium text-black/70">
-          Drag and drop a file here or choose it manually
+          Перетащи файл сюда или выбери его вручную
         </p>
         <p className="mt-2 text-sm leading-7 text-black/46">{hint}</p>
 
@@ -191,7 +191,7 @@ export function MockUploadDropzone({
               />
             </div>
             <p className="mt-3 text-xs font-medium uppercase tracking-[0.18em] text-[#3d3bff]">
-              Mock upload in progress · {progress}%
+              Демо-загрузка идет · {progress}%
             </p>
           </div>
         ) : uploadedName ? (

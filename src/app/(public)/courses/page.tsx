@@ -51,7 +51,7 @@ const sellingPillars = [
   {
     title: "Учиться реально проще",
     description:
-      "AI-summary, задания, маршрут и аккуратная логика прохождения снижают шанс бросить курс на середине.",
+      "AI-выжимки, задания, маршрут и аккуратная логика прохождения снижают шанс бросить курс на середине.",
     icon: Bot,
   },
 ] as const;
@@ -66,7 +66,7 @@ const buyerScenarios = [
   {
     title: "Усилить текущий навык",
     description:
-      "Короткие и средние программы помогают быстро закрыть конкретный skill gap.",
+      "Короткие и средние программы помогают быстро закрыть конкретный пробел в навыке.",
     icon: TrendingUp,
   },
   {
@@ -88,7 +88,7 @@ const learningFlow = [
     step: "02",
     title: "Заходишь в курс",
     description:
-      "Получаешь модули, уроки, AI-summary и структуру без хаоса.",
+      "Получаешь модули, уроки, AI-выжимки и структуру без хаоса.",
     icon: GraduationCap,
   },
   {
@@ -129,7 +129,7 @@ const purchaseBenefits = [
   {
     title: "Доверие к покупке",
     description:
-      "Витрина, отзывы и premium-оформление дают ощущение зрелого продукта, а не сырого курса.",
+      "Витрина, отзывы и премиальное оформление дают ощущение зрелого продукта, а не сырого курса.",
     icon: ShieldCheck,
   },
 ] as const;
@@ -138,7 +138,7 @@ const faqItems = [
   {
     question: "Что отличает эти курсы от обычной LMS?",
     answer:
-      "Каждый курс здесь подан как продукт: сильная витрина, понятная программа, AI-enhanced материалы и аккуратный learner experience.",
+      "Каждый курс здесь подан как продукт: сильная витрина, понятная программа, AI-усиленные материалы и аккуратный опыт ученика.",
   },
   {
     question: "Здесь только курсы про AI?",
@@ -148,7 +148,7 @@ const faqItems = [
   {
     question: "Можно ли запустить здесь свой курс?",
     answer:
-      "Да. Для авторов это не просто хранилище уроков, а premium AI-LMS с готовой упаковкой, страницей курса и кабинетом ученика.",
+      "Да. Для авторов это не просто хранилище уроков, а премиальная AI-LMS с готовой упаковкой, страницей курса и кабинетом ученика.",
   },
 ] as const;
 
@@ -237,7 +237,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-medium text-white/86">
                 <Sparkles className="size-4 text-[#7a78ff]" />
-                Premium marketplace for modern online courses
+                Премиальная витрина современных онлайн-курсов
               </div>
 
               <h1 className="mt-5 max-w-5xl text-[clamp(2.85rem,6vw,5.9rem)] font-semibold leading-[0.92] tracking-tight">
@@ -247,14 +247,14 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
               <p className="mt-5 max-w-3xl text-base leading-7 text-white/64 sm:text-lg">
                 Здесь хочется покупать, потому что курсы выглядят
                 профессионально: сильная упаковка, понятная программа,
-                аккуратный learner experience и ощущение, что ты входишь в
+                аккуратный опыт ученика и ощущение, что ты входишь в
                 зрелый продукт, а не в набор случайных уроков.
               </p>
 
               <div className="mt-6 flex flex-wrap gap-3">
                 {[
                   "Практика и результат",
-                  "AI-enhanced формат",
+                  "AI-усиленный формат",
                   "Сильные авторы и отзывы",
                 ].map((item) => (
                   <div
@@ -317,7 +317,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                     {startingPrice ? formatCurrency(startingPrice, "USD") : "$289"}
                   </p>
                   <p className="mt-2 text-sm text-white/56">
-                    за premium-программу
+                    за премиальную программу
                   </p>
                 </PremiumCard>
               </div>
@@ -339,7 +339,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                       </h2>
                     </div>
                     <Badge className="border-transparent bg-white/12 text-white">
-                      Bestseller
+                      Хит
                     </Badge>
                   </div>
 
@@ -365,7 +365,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                     <div className="mt-3 grid gap-3 sm:grid-cols-2">
                       {[
                         "Понятная программа",
-                        "AI-enhanced подача",
+                        "AI-усиленная подача",
                         "Премиальная упаковка",
                         "Реальные отзывы",
                       ].map((item) => (
@@ -572,7 +572,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                     heroCourse.category,
                     heroCourse.level,
                     `${heroCourse.lessonCount} уроков`,
-                    heroCourse.aiEnhanced ? "AI-enhanced" : "Structured course",
+                    heroCourse.aiEnhanced ? "AI-усилен" : "Структурированный курс",
                   ].map((item) => (
                     <div
                       key={item}
@@ -651,7 +651,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
         <SectionHeader
           eyebrow="Популярные курсы"
           title={`${catalog.total} курсов, которые уже готовы к покупке`}
-          description="Реальные программы из базы Prisma с автором, ценой, lesson count и AI-enhanced подачей."
+          description="Реальные программы из базы Prisma с автором, ценой, количеством уроков и AI-усиленной подачей."
           action={
             <PremiumButton asChild tone="secondary">
               <Link href="/register">
@@ -689,7 +689,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
             <EmptyState
               icon={Search}
               title="Курсы не найдены"
-              description="Сейчас в витрине показываются только published курсы."
+              description="Сейчас в витрине показываются только опубликованные курсы."
               action={
                 <PremiumButton asChild tone="secondary">
                   <Link href="/courses">Обновить витрину</Link>
@@ -748,14 +748,14 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
             </h2>
             <p className="mt-4 text-base leading-8 text-white/68">
               Это не просто хранилище уроков. Автор получает витрину, упаковку
-              и learner experience, который помогает продавать курс как зрелый
-              digital product.
+              и опыт ученика, который помогает продавать курс как зрелый
+              цифровой продукт.
             </p>
 
             <div className="mt-8 space-y-3">
               {[
                 "Премиальная страница курса",
-                "AI-summary, тесты и задания поверх уроков",
+                "AI-выжимки, тесты и задания поверх уроков",
                 "Ученики получают прогресс, бейджи и AI-наставника",
               ].map((item) => (
                 <div
@@ -819,7 +819,7 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
             <EmptyState
               icon={Star}
               title="Отзывы скоро появятся"
-              description="Как только в опубликованных курсах будет больше review-данных, этот блок автоматически наполнится."
+              description="Как только в опубликованных курсах будет больше данных по отзывам, этот блок автоматически наполнится."
             />
           </div>
         )}
@@ -859,9 +859,9 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
 
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <Badge variant="primary">Final CTA</Badge>
+              <Badge variant="primary">Финальный шаг</Badge>
               <h2 className="mt-5 text-[clamp(2.6rem,5vw,4.7rem)] font-semibold leading-[0.95] tracking-tight text-black">
-                Хочешь купить сильный курс или вывести свой в premium-сегмент?
+                Хочешь купить сильный курс или вывести свой в премиальный сегмент?
               </h2>
               <p className="mt-5 text-lg leading-8 text-black/60">
                 Витрина уже работает как продающая часть продукта. Дальше можно

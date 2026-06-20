@@ -10,15 +10,15 @@ import { Badge } from "@/components/ui/badge";
 import { pricingPlans } from "@/lib/marketing";
 
 export const metadata: Metadata = {
-  title: "Цены nowa school - гайды, Telegram, bootcamp и платформа",
+  title: "Цены nowa school - гайды, Телеграм, буткемп и платформа",
   description:
-    "Прозрачная продуктовая лестница nowa school: free starter kit, mini-guides, Telegram club и платформа для авторов.",
+    "Прозрачная продуктовая лестница nowa school: бесплатный стартовый набор, мини-гайды, Телеграм-клуб и платформа для авторов.",
 };
 
 const notes = [
   "Можно начать бесплатно и понять формат до покупки",
-  "Mini-guides продают конкретный практический результат",
-  "Telegram подходит тем, кто хочет регулярные обновления и файлы",
+  "Мини-гайды продают конкретный практический результат",
+  "Телеграм подходит тем, кто хочет регулярные обновления и файлы",
   "Платформа для авторов берет 15% только с успешных продаж",
 ];
 
@@ -28,13 +28,13 @@ export default function PricingPage() {
       <section className="app-shell pb-12 pt-10 sm:pt-16 lg:pb-18 lg:pt-20">
         <AnimatedSection className="mx-auto max-w-5xl text-center">
           <div className="flex justify-center">
-            <Badge variant="primary">Pricing</Badge>
+            <Badge variant="primary">Цены</Badge>
           </div>
           <h1 className="mt-6 text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl lg:text-7xl">
             Простая лестница: от бесплатного входа до полноценной AI-LMS
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-black/62 sm:text-xl">
-            Выбирай глубину под текущую задачу: попробовать prompts, собрать один
+            Выбирай глубину под текущую задачу: попробовать промты, собрать один
             продукт, зайти в клуб или запускать курсы на платформе.
           </p>
         </AnimatedSection>
@@ -111,13 +111,13 @@ export default function PricingPage() {
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <Badge variant="subtle" className="bg-white/10 text-white/72">
-                  Best start
+                  Лучший старт
                 </Badge>
                 <h2 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
-                  Начни с free starter kit
+                  Начни с бесплатного стартового набора
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-8 text-white/62">
-                  Забери prompts и шаблон, чтобы почувствовать nowa school до покупки гайда или участия в bootcamp.
+                  Забери промты и шаблон, чтобы почувствовать nowa school до покупки гайда или участия в буткемпе.
                 </p>
               </div>
               <PremiumButton asChild className="h-[52px] bg-white px-7 text-base text-black hover:bg-white/90">

@@ -60,14 +60,14 @@ export default async function LearnPage() {
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(61,59,255,0.12),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(71,183,255,0.08),transparent_26%)]" />
 
           <div className="relative">
-            <p className="text-sm text-black/42">Current focus</p>
+            <p className="text-sm text-black/42">Текущий фокус</p>
             <h1 className="mt-3 max-w-4xl text-[clamp(2.7rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-tight text-black">
               {activeCourse ? activeCourse.title : "Кабинет готов к первой покупке"}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-8 text-black/58 sm:text-lg">
               {activeCourse
-                ? "Продолжай курс с того места, где остановился. Прогресс, points и recent lessons уже связаны с реальным enrollment."
-                : "После первой покупки здесь сразу появятся уроки, badges, progress и плавный переход в learner flow."}
+                ? "Продолжай курс с того места, где остановился. Прогресс, очки и последние уроки уже связаны с реальным доступом."
+                : "После первой покупки здесь сразу появятся уроки, бейджи, прогресс и плавный переход в обучение."}
             </p>
 
             {activeCourse ? (
@@ -96,7 +96,7 @@ export default async function LearnPage() {
                 <div className="rounded-[1.8rem] bg-[#f6f7fa] px-5 py-5">
                   <p className="text-sm text-black/42">Следующий шаг</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight text-black">
-                    Continue
+                    Продолжить
                   </p>
                   <PremiumButton asChild className="mt-4 h-11 w-full">
                     <Link
@@ -144,19 +144,19 @@ export default async function LearnPage() {
               {data.metrics.currentLevel}
             </p>
             <p className="mt-3 text-sm leading-7 text-white/70">
-              рассчитывается как `floor(points / 100) + 1`
+              рассчитывается как `floor(очков / 100) + 1`
             </p>
           </PremiumCard>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
             <PremiumCard padding="lg" className="rounded-[2rem] bg-white/92 backdrop-blur-xl">
-              <p className="text-sm text-black/42">Points</p>
+              <p className="text-sm text-black/42">Очки</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
                 {formatCompactNumber(data.metrics.totalPoints)}
               </p>
             </PremiumCard>
             <PremiumCard padding="lg" className="rounded-[2rem] bg-white/92 backdrop-blur-xl">
-              <p className="text-sm text-black/42">Streak</p>
+              <p className="text-sm text-black/42">Серия</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
                 {data.metrics.currentStreakDays}
               </p>
@@ -180,13 +180,13 @@ export default async function LearnPage() {
         />
         <StatCard
           icon={Award}
-          label="Points"
+          label="Очки"
           value={formatCompactNumber(data.metrics.totalPoints)}
           description="очки вовлечения"
         />
         <StatCard
           icon={Flame}
-          label="Streak"
+          label="Серия"
           value={`${data.metrics.currentStreakDays} дн`}
           description="лучшая серия"
         />
@@ -197,7 +197,7 @@ export default async function LearnPage() {
           <SectionHeader
             eyebrow="Мои курсы"
             title="Купленные программы"
-            description="Каждый курс открывается как premium learning path со своим progress, points и next lesson."
+            description="Каждый курс открывается как аккуратный учебный маршрут со своим прогрессом, очками и следующим уроком."
           />
 
           <StaggerGrid className="grid gap-5 lg:grid-cols-2">
@@ -246,13 +246,13 @@ export default async function LearnPage() {
                     </p>
                   </div>
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-4">
-                    <p className="text-xs text-black/42">Points</p>
+                    <p className="text-xs text-black/42">Очки</p>
                     <p className="mt-2 text-lg font-semibold text-black">
                       {course.points}
                     </p>
                   </div>
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-4">
-                    <p className="text-xs text-black/42">Streak</p>
+                    <p className="text-xs text-black/42">Серия</p>
                     <p className="mt-2 text-lg font-semibold text-black">
                       {course.streakDays}
                     </p>
@@ -292,7 +292,7 @@ export default async function LearnPage() {
         <EmptyState
           icon={Layers3}
           title="Пока нет купленных курсов"
-          description="Открой каталог, купи первую программу и learner-кабинет сразу наполнится уроками, badges и прогрессом."
+          description="Открой каталог, купи первую программу и кабинет ученика сразу наполнится уроками, бейджами и прогрессом."
           action={
             <PremiumButton asChild tone="secondary">
               <Link href="/courses">Открыть каталог</Link>
@@ -304,7 +304,7 @@ export default async function LearnPage() {
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94 backdrop-blur-xl">
           <SectionHeader
-            eyebrow="Recent lessons"
+            eyebrow="Последние уроки"
             title="Последние уроки"
             description="Последние завершенные шаги по купленным программам."
           />
@@ -333,7 +333,7 @@ export default async function LearnPage() {
                     </div>
                   </div>
                   <div className="rounded-full bg-[#eef0ff] px-4 py-3 text-sm font-medium text-[#3d3bff]">
-                    {typeof lesson.score === "number" ? `${lesson.score}%` : "Done"}
+                    {typeof lesson.score === "number" ? `${lesson.score}%` : "Готово"}
                   </div>
                 </Link>
               ))}
@@ -351,7 +351,7 @@ export default async function LearnPage() {
 
         <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/94 backdrop-blur-xl">
           <SectionHeader
-            eyebrow="Badges"
+            eyebrow="Бейджи"
             title="Полученные бейджи"
             description="Награды открываются по мере продвижения внутри курсов."
           />

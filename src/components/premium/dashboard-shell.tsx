@@ -20,8 +20,8 @@ type DashboardShellProps = {
 const shellCopy = {
   author: {
     title: "Авторский кабинет",
-    description: "Курсы, продажи и builder в одном аналитическом пространстве.",
-    note: "Analytics, revenue и course builder",
+    description: "Курсы, продажи и конструктор в одном аналитическом пространстве.",
+    note: "Аналитика, доход и студия курса",
     side: "Управляй курсами, модулями, уроками и продажами без ощущения старой админки.",
   },
   student: {
@@ -39,9 +39,9 @@ const shellCopy = {
 } as const;
 
 const roleBadge = {
-  author: "AUTHOR",
-  student: "STUDENT",
-  admin: "ADMIN",
+  author: "АВТОР",
+  student: "УЧЕНИК",
+  admin: "АДМИН",
 } as const;
 
 export function DashboardShell({
@@ -80,7 +80,7 @@ export function DashboardShell({
               <div className="mt-6 rounded-[1.5rem] border border-black/5 bg-[#f5f5f5] p-4">
                 <div className="flex items-center gap-3">
                   <Avatar className="size-11 rounded-full">
-                    <AvatarImage src={undefined} alt={session.user.name ?? "User"} />
+                    <AvatarImage src={undefined} alt={session.user.name ?? "Пользователь"} />
                     <AvatarFallback className="rounded-full">
                       {initials ?? "NS"}
                     </AvatarFallback>
@@ -104,18 +104,18 @@ export function DashboardShell({
             <PremiumCard padding="lg" tone="glass" className="p-6 sm:p-8">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm text-muted-foreground">Workspace</p>
+                  <p className="text-sm text-muted-foreground">Пространство</p>
                   <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
                     {role === "author" ? "85%" : "01"}
                   </p>
                 </div>
-                <Badge variant="primary">{role === "author" ? "Revenue" : "Live"}</Badge>
+                <Badge variant="primary">{role === "author" ? "Доход" : "Активно"}</Badge>
               </div>
               <p className="mt-4 text-sm text-muted-foreground">{copy.note}</p>
             </PremiumCard>
 
             <PremiumCard padding="lg" tone="glass" className="p-6 sm:p-8">
-              <SidebarNav items={dashboardNavigation[role]} label="Workspace" />
+              <SidebarNav items={dashboardNavigation[role]} label="Навигация" />
             </PremiumCard>
           </div>
         </aside>
@@ -177,7 +177,7 @@ export function DashboardShell({
                       <Bell className="size-4" />
                     </div>
                     <Avatar className="size-10 rounded-full">
-                      <AvatarImage src={undefined} alt={session.user.name ?? "User"} />
+                      <AvatarImage src={undefined} alt={session.user.name ?? "Пользователь"} />
                       <AvatarFallback className="rounded-full">
                         {initials ?? "NS"}
                       </AvatarFallback>
@@ -192,14 +192,14 @@ export function DashboardShell({
               className="border-transparent bg-black p-6 text-white sm:p-8"
             >
               <p className="text-sm text-white/56">
-                {role === "author" ? "Экономика" : role === "admin" ? "Take rate" : "MVP"}
+                {role === "author" ? "Экономика" : role === "admin" ? "Комиссия" : "MVP"}
               </p>
               <p className="mt-3 text-4xl font-semibold tracking-tight">
                 {role === "author" || role === "admin" ? "15%" : "01"}
               </p>
               <p className="mt-3 text-sm leading-6 text-white/72">
                 {role === "author"
-                  ? "Комиссия платформы. Остальное остается автору как revenue."
+                  ? "Комиссия платформы. Остальное остается автору как чистый доход."
                   : role === "admin"
                     ? "Платформа удерживает комиссию только с успешных продаж."
                     : "Каркас готов. Дальше можно допиливать блоки вручную."}

@@ -56,7 +56,7 @@ export default async function AdminSalesPageModerationDetail({
       <Breadcrumbs
         items={[
           { label: "Админка", href: "/admin" },
-          { label: "Moderation", href: "/admin/moderation" },
+          { label: "Модерация", href: "/admin/moderation" },
           { label: detail.course.title },
         ]}
       />
@@ -67,9 +67,9 @@ export default async function AdminSalesPageModerationDetail({
           className="rounded-[2.5rem] bg-white/92 backdrop-blur-xl"
         >
           <SectionHeader
-            eyebrow="Preview"
-            title="Sales page review"
-            description="Полный preview страницы курса до approve / reject."
+            eyebrow="Предпросмотр"
+            title="Проверка продающей страницы"
+            description="Полный просмотр страницы курса перед одобрением или отклонением."
           />
           <div className="mt-6">
             <CourseSalesPageRenderer
@@ -100,24 +100,24 @@ export default async function AdminSalesPageModerationDetail({
             <div className="mt-5 space-y-3">
               <form action={approveAction}>
                 <PremiumButton type="submit" className="h-11 w-full">
-                  Approve
+                  Одобрить
                 </PremiumButton>
               </form>
               <form action={requestChangesAction}>
                 <PremiumButton type="submit" tone="secondary" className="h-11 w-full">
-                  Request changes
+                  Запросить правки
                 </PremiumButton>
               </form>
               <form action={rejectAction}>
                 <PremiumButton type="submit" tone="secondary" className="h-11 w-full">
-                  Reject
+                  Отклонить
                 </PremiumButton>
               </form>
             </div>
 
             <div className="mt-5">
               <PremiumButton asChild tone="secondary" className="h-11 w-full">
-                <Link href={`/courses/${detail.course.slug}`}>Open public course</Link>
+                <Link href={`/courses/${detail.course.slug}`}>Открыть публичную страницу курса</Link>
               </PremiumButton>
             </div>
           </PremiumCard>
@@ -126,7 +126,7 @@ export default async function AdminSalesPageModerationDetail({
             padding="lg"
             className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
           >
-            <p className="text-sm font-medium text-black">Automatic issues</p>
+            <p className="text-sm font-medium text-black">Автоматические замечания</p>
             <div className="mt-5 space-y-3">
               {detail.issues.length ? (
                 detail.issues.map((issue) => (
@@ -151,7 +151,7 @@ export default async function AdminSalesPageModerationDetail({
                 ))
               ) : (
                 <p className="text-sm leading-7 text-black/56">
-                  Автоматических issues сейчас нет.
+                  Сейчас автоматических замечаний нет.
                 </p>
               )}
             </div>
@@ -161,7 +161,7 @@ export default async function AdminSalesPageModerationDetail({
             padding="lg"
             className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
           >
-            <p className="text-sm font-medium text-black">Submission history</p>
+            <p className="text-sm font-medium text-black">История отправок</p>
             <div className="mt-5 space-y-3">
               {detail.submissions.map((submission) => (
                 <div
@@ -178,7 +178,7 @@ export default async function AdminSalesPageModerationDetail({
                   ) : null}
                   {submission.adminComment ? (
                     <p className="mt-3 text-sm leading-7 text-black/56">
-                      Admin: {submission.adminComment}
+                      Комментарий администратора: {submission.adminComment}
                     </p>
                   ) : null}
                 </div>

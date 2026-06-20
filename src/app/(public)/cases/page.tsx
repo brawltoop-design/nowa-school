@@ -39,13 +39,13 @@ export default function CasesPage() {
       <section className="app-shell pb-12 pt-10 sm:pt-16 lg:pb-18 lg:pt-20">
         <AnimatedSection className="mx-auto max-w-5xl text-center">
           <div className="flex justify-center">
-            <Badge variant="primary">Cases</Badge>
+            <Badge variant="primary">Кейсы</Badge>
           </div>
           <h1 className="mt-6 text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl lg:text-7xl">
             Показываем не обещания, а то, что можно собрать руками
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-black/62 sm:text-xl">
-            Кейсы nowa school - это демо-проекты, prompt flows, прототипы и
+            Кейсы nowa school - это демо-проекты, сценарии промтов, прототипы и
             понятные артефакты, которые помогают увидеть реальный процесс сборки.
           </p>
         </AnimatedSection>
@@ -56,7 +56,7 @@ export default function CasesPage() {
           <SectionHeader
             eyebrow="Демо-проекты"
             title="Три сценария, с которых проще всего начать"
-            description="Каждый сценарий можно развернуть в отдельный mini-guide, bootcamp-задание или большой курс."
+            description="Каждый сценарий можно развернуть в отдельный мини-гайд, задание для буткемпа или большой курс."
           />
           <StaggerGrid className="mt-8 grid gap-5 md:grid-cols-3">
             {cases.map((item) => (
@@ -69,7 +69,7 @@ export default function CasesPage() {
                 <div className="mt-8 aspect-video rounded-[1.5rem] bg-[radial-gradient(circle_at_25%_20%,rgba(61,59,255,0.30),transparent_32%),linear-gradient(135deg,#0a0a0a,#222)] p-4 text-white">
                   <PlayCircle className="size-6 text-white/72" />
                   <p className="mt-12 max-w-[14rem] text-xl font-semibold tracking-tight">
-                    Demo preview
+                    Демо-превью
                   </p>
                 </div>
               </PremiumCard>
@@ -83,7 +83,7 @@ export default function CasesPage() {
           <SectionHeader
             eyebrow="Что внутри кейса"
             title="Не только красивый результат, но и логика сборки"
-            description="Показываем, какие решения приняты, какие prompts использованы и как проверять качество результата."
+            description="Показываем, какие решения приняты, какие промты использованы и как проверять качество результата."
           />
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {caseDetails.map((item) => (
@@ -105,7 +105,7 @@ export default function CasesPage() {
             <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
               <div>
                 <Badge variant="subtle" className="bg-white/10 text-white/72">
-                  Next step
+                  Следующий шаг
                 </Badge>
                 <h2 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
                   Выбери гайд и повтори сборку на своем проекте

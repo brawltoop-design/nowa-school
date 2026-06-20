@@ -48,7 +48,7 @@ export function MockCheckoutSubmitButton({
         ) : (
           <ShieldCheck className="mr-2 size-4" />
         )}
-        {pending ? "Подтверждаем доступ..." : "Подтвердить mock checkout"}
+        {pending ? "Подтверждаем доступ..." : "Подтвердить демо-оплату"}
       </PremiumButton>
     </>
   );

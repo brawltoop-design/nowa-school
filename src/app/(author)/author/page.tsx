@@ -22,6 +22,22 @@ import { formatCurrency } from "@/lib/utils";
 import { requireUserRole } from "@/server/auth/session";
 import { getAuthorDashboardData } from "@/server/author/queries";
 
+const courseStatusLabel = {
+  DRAFT: "Черновик",
+  PUBLISHED: "Опубликован",
+  BLOCKED: "Заблокирован",
+} as const;
+
+const salesPageStatusLabel = {
+  DRAFT: "Черновик",
+  PENDING_REVIEW: "На модерации",
+  IN_REVIEW: "На проверке",
+  APPROVED: "Одобрена",
+  PUBLISHED: "Опубликована",
+  REJECTED: "Отклонена",
+  UNPUBLISHED: "Снята с публикации",
+} as const;
+
 export default async function AuthorDashboardPage() {
   const session = await requireUserRole(["AUTHOR", "ADMIN"], "/author");
   const data = await getAuthorDashboardData({
@@ -35,7 +51,7 @@ export default async function AuthorDashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <PremiumCard padding="lg" className="rounded-[2.6rem] bg-white/92 backdrop-blur-xl">
-          <Badge variant="primary">Author revenue</Badge>
+          <Badge variant="primary">Доход автора</Badge>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-black sm:text-5xl">
             Продажи, курсы и экономика автора
           </h1>
@@ -74,13 +90,13 @@ export default async function AuthorDashboardPage() {
         />
         <StatCard
           icon={Globe2}
-          label="Published"
+          label="Опубликованы"
           value={String(data.metrics.publishedCourses)}
           description="видны в каталоге"
         />
         <StatCard
           icon={FileText}
-          label="Drafts"
+          label="Черновики"
           value={String(data.metrics.draftCourses)}
           description="ждут упаковки"
         />
@@ -110,13 +126,13 @@ export default async function AuthorDashboardPage() {
         />
         <StatCard
           icon={Sparkles}
-          label="Sales page views"
+          label="Просмотры страницы"
           value={String(data.metrics.salesPageViews)}
           description="трафик на продающие страницы"
         />
         <StatCard
           icon={FileText}
-          label="Pending review"
+          label="На проверке"
           value={String(data.metrics.salesPagePendingReview)}
           description="страниц ждут модерацию"
         />
@@ -126,7 +142,7 @@ export default async function AuthorDashboardPage() {
         <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/92 backdrop-blur-xl">
           <SectionHeader
             eyebrow="Последние продажи"
-            title="Recent sales"
+            title="Последние оплаты"
             description="Последние оплаченные заказы с реальными суммами и разбиением по комиссии."
           />
 
@@ -223,7 +239,7 @@ export default async function AuthorDashboardPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <Badge variant={course.status === "PUBLISHED" ? "primary" : "subtle"}>
-                        {course.status}
+                        {courseStatusLabel[course.status]}
                       </Badge>
                       <Badge variant="subtle">{course.category}</Badge>
                       <Badge variant="subtle">{course.level}</Badge>
@@ -266,27 +282,29 @@ export default async function AuthorDashboardPage() {
 
                 <div className="mt-4 grid gap-3 sm:grid-cols-4">
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-4">
-                    <p className="text-xs text-black/42">Sales page</p>
+                    <p className="text-xs text-black/42">Продающая страница</p>
                     <p className="mt-2 text-lg font-semibold text-black">
-                      {course.salesPageStatus ?? "No page"}
+                      {course.salesPageStatus
+                        ? salesPageStatusLabel[course.salesPageStatus]
+                        : "Не создана"}
                     </p>
                   </div>
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-4">
-                    <p className="text-xs text-black/42">Views</p>
+                    <p className="text-xs text-black/42">Просмотры</p>
                     <p className="mt-2 text-lg font-semibold text-black">
                       {course.pageViews}
                     </p>
                   </div>
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-4">
-                    <p className="text-xs text-black/42">Checkout conv.</p>
+                    <p className="text-xs text-black/42">Конверсия в оплату</p>
                     <p className="mt-2 text-lg font-semibold text-black">
                       {course.conversionRate}%
                     </p>
                   </div>
                   <div className="rounded-[1.4rem] bg-[#f6f7fa] px-4 py-4">
-                    <p className="text-xs text-black/42">Moderation</p>
+                    <p className="text-xs text-black/42">Модерация</p>
                     <p className="mt-2 text-lg font-semibold text-black">
-                      {course.pendingModeration ? "Pending" : "Clear"}
+                      {course.pendingModeration ? "Ожидает" : "Чисто"}
                     </p>
                   </div>
                 </div>
@@ -305,8 +323,8 @@ export default async function AuthorDashboardPage() {
                       </Link>
                     </PremiumButton>
                     <PremiumButton asChild className="h-12 px-5">
-                      <Link href={`/author/courses/${course.id}/studio?tab=sales-page`}>
-                        Открыть studio
+                      <Link href={`/author/courses/${course.id}/studio/creative-site`}>
+                        Открыть студию
                       </Link>
                     </PremiumButton>
                   </div>
@@ -318,7 +336,7 @@ export default async function AuthorDashboardPage() {
           <EmptyState
             icon={Layers3}
             title="Пока нет курсов"
-            description="Создай первый курс, и после этого здесь появятся builder, продажи и аналитика."
+            description="Создай первый курс, и после этого здесь появятся конструктор, продажи и аналитика."
             action={
               <PremiumButton asChild>
                 <Link href="/author/courses/new">Создать курс</Link>

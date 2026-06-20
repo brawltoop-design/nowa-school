@@ -30,6 +30,18 @@ function statusTone(status: string) {
   return status === "APPROVED" || status === "ISSUED" ? "primary" : "subtle";
 }
 
+const statusLabel: Record<string, string> = {
+  DRAFT: "Черновик",
+  SUBMITTED: "Отправлено",
+  APPROVED: "Одобрено",
+  REJECTED: "Отклонено",
+  NEEDS_REVISION: "Нужна доработка",
+  PENDING: "Ожидает",
+  ISSUED: "Выдан",
+  REVOKED: "Отозван",
+  EXPIRED: "Истек",
+};
+
 export default async function AuthorCourseCertificatesPage({
   params,
 }: AuthorCertificatesPageProps) {
@@ -58,26 +70,26 @@ export default async function AuthorCourseCertificatesPage({
       <Breadcrumbs
         items={[
           { label: "Авторский кабинет", href: "/author" },
-          { label: course.title, href: `/author/courses/${course.id}/builder` },
+          { label: course.title, href: `/author/courses/${course.id}/studio/overview` },
           { label: "Сертификаты" },
         ]}
       />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <PremiumCard padding="lg" className="rounded-[2.6rem] bg-white/94">
-          <Badge variant="primary">Verified Skills review</Badge>
+          <Badge variant="primary">Проверка навыков</Badge>
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-black sm:text-5xl">
             Проверка проектов учеников
           </h1>
           <p className="mt-4 max-w-3xl text-sm leading-8 text-black/56">
-            Автор видит заявки на сертификат, проектные ссылки, score и feedback.
-            Approve выдает публичный nowa school Verified Skill.
+            Автор видит заявки на сертификат, ссылки на проекты, оценку и обратную связь.
+            Одобрение выдает публичный сертификат подтвержденного навыка nowa school.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <PremiumButton asChild tone="secondary" className="h-12 px-5">
-              <Link href={`/author/courses/${course.id}/builder`}>
+              <Link href={`/author/courses/${course.id}/studio/overview`}>
                 <ArrowLeft className="mr-2 size-4" />
-                В builder
+                В студию курса
               </Link>
             </PremiumButton>
             <PremiumButton asChild tone="secondary" className="h-12 px-5">
@@ -90,7 +102,7 @@ export default async function AuthorCourseCertificatesPage({
           padding="lg"
           className="rounded-[2.2rem] border-transparent bg-black text-white"
         >
-          <p className="text-sm text-white/56">Average score</p>
+          <p className="text-sm text-white/56">Средняя оценка</p>
           <p className="mt-3 text-5xl font-semibold tracking-tight">
             {metrics.averageScore}
           </p>
@@ -103,28 +115,28 @@ export default async function AuthorCourseCertificatesPage({
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard
           icon={FileCheck2}
-          label="Submissions"
+          label="Заявки"
           value={String(metrics.totalSubmissions)}
           description="все отправленные проекты"
         />
         <StatCard
           icon={RotateCcw}
-          label="Pending"
+          label="Ожидают"
           value={String(metrics.pendingSubmissions)}
           description="ждут решения"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Issued"
+          label="Выданы"
           value={String(metrics.issuedCertificates)}
-          description="выданные credentials"
+          description="выданные сертификаты"
         />
       </div>
 
       <SectionHeader
-        eyebrow="Queue"
+        eyebrow="Очередь"
         title="Заявки на сертификат"
-        description="Проверь проект, поставь score и дай короткий полезный feedback."
+        description="Проверь проект, поставь оценку и дай короткую полезную обратную связь."
       />
 
       {submissions.length ? (
@@ -139,11 +151,11 @@ export default async function AuthorCourseCertificatesPage({
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={statusTone(submission.status)}>
-                      {submission.status}
+                      {statusLabel[submission.status] ?? submission.status}
                     </Badge>
                     {submission.certificate ? (
                       <Badge variant={statusTone(submission.certificate.status)}>
-                        {submission.certificate.status}
+                        {statusLabel[submission.certificate.status] ?? submission.certificate.status}
                       </Badge>
                     ) : null}
                   </div>
@@ -162,7 +174,7 @@ export default async function AuthorCourseCertificatesPage({
                       target="_blank"
                       className="inline-flex items-center gap-2 rounded-full bg-[#f4f4f4] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#eef0ff]"
                     >
-                      Project
+                      Проект
                       <ExternalLink className="size-4" />
                     </Link>
                     {submission.demoVideoUrl ? (
@@ -171,7 +183,7 @@ export default async function AuthorCourseCertificatesPage({
                         target="_blank"
                         className="inline-flex items-center gap-2 rounded-full bg-[#f4f4f4] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#eef0ff]"
                       >
-                        Demo
+                        Демо
                         <ExternalLink className="size-4" />
                       </Link>
                     ) : null}
@@ -181,7 +193,7 @@ export default async function AuthorCourseCertificatesPage({
                         target="_blank"
                         className="inline-flex items-center gap-2 rounded-full bg-[#f4f4f4] px-4 py-2.5 text-sm font-medium text-black transition hover:bg-[#eef0ff]"
                       >
-                        Repository
+                        Репозиторий
                         <ExternalLink className="size-4" />
                       </Link>
                     ) : null}
@@ -190,7 +202,7 @@ export default async function AuthorCourseCertificatesPage({
                         href={`/cert/${submission.certificate.certificateId}`}
                         className="inline-flex items-center gap-2 rounded-full bg-[#eef0ff] px-4 py-2.5 text-sm font-medium text-[#3d3bff] transition hover:bg-[#e2e5ff]"
                       >
-                        Verify page
+                        Страница верификации
                         <ArrowUpRight className="size-4" />
                       </Link>
                     ) : null}
@@ -201,7 +213,7 @@ export default async function AuthorCourseCertificatesPage({
                     </p>
                   ) : null}
                   <p className="mt-5 text-xs text-black/40">
-                    Updated {format(submission.updatedAt, "d MMM yyyy, HH:mm", { locale: ru })}
+                    Обновлено {format(submission.updatedAt, "d MMM yyyy, HH:mm", { locale: ru })}
                   </p>
                 </div>
 
@@ -217,7 +229,7 @@ export default async function AuthorCourseCertificatesPage({
                   />
                   <textarea
                     name="feedback"
-                    placeholder="Feedback для ученика"
+                    placeholder="Обратная связь для ученика"
                     defaultValue={submission.certificate?.latestFeedback ?? ""}
                     className="min-h-28 rounded-2xl border border-black/10 bg-[#f8f8f8] px-4 py-3 text-sm leading-7 outline-none focus:border-[#3d3bff]/40 focus:bg-white"
                     required
@@ -233,7 +245,7 @@ export default async function AuthorCourseCertificatesPage({
                       className="h-12"
                     >
                       <CheckCircle2 className="mr-2 size-4" />
-                      Approve
+                      Одобрить
                     </PremiumButton>
                     <PremiumButton
                       formAction={reviewCertificateSubmission.bind(
@@ -246,7 +258,7 @@ export default async function AuthorCourseCertificatesPage({
                       className="h-12"
                     >
                       <RotateCcw className="mr-2 size-4" />
-                      Request revision
+                      Отправить на доработку
                     </PremiumButton>
                     <PremiumButton
                       formAction={reviewCertificateSubmission.bind(
@@ -259,7 +271,7 @@ export default async function AuthorCourseCertificatesPage({
                       className="h-12"
                     >
                       <XCircle className="mr-2 size-4" />
-                      Reject
+                      Отклонить
                     </PremiumButton>
                   </div>
                 </form>

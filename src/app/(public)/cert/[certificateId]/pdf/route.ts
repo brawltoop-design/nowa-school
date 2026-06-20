@@ -22,7 +22,7 @@ function buildPdf(lines: string[]) {
     "BT",
     "/F1 24 Tf",
     "72 760 Td",
-    `(nowa school Verified Skills) Tj`,
+    `(nowa school Verified Skills Certificate) Tj`,
     "/F1 12 Tf",
     ...lines.flatMap((line) => [
       "0 -24 Td",

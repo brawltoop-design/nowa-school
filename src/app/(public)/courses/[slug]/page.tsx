@@ -127,7 +127,7 @@ export default async function PublicCoursePage({ params }: CoursePageProps) {
           <SectionHeader
             eyebrow="Еще в каталоге"
             title="Похожие программы"
-            description="Если хочешь собрать вокруг себя более сильный learning stack, вот еще несколько premium курсов рядом по контексту."
+            description="Если хочешь собрать вокруг себя более сильную учебную экосистему, вот еще несколько сильных курсов рядом по контексту."
           />
 
           <div className="mt-6 grid gap-5 lg:grid-cols-3">

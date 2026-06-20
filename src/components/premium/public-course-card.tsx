@@ -76,7 +76,7 @@ export function PublicCourseCard({
           </Badge>
           {aiEnhanced ? (
             <Badge variant="primary" className="shadow-sm">
-              AI-enhanced
+              AI-усилен
             </Badge>
           ) : null}
         </div>

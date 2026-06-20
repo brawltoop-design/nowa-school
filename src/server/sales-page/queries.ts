@@ -16,6 +16,8 @@ import {
   type SalesPageCourseContext,
   type SalesPageDraft,
 } from "@/lib/sales-page";
+import type { ModulePracticeInput } from "@/lib/module-practice";
+import { coerceModulePractice } from "@/lib/module-practice";
 import { getPrismaClient } from "@/server/db";
 
 export type StudioActor = {
@@ -81,16 +83,35 @@ export type CourseStudioData = {
       id: string;
       title: string;
       description: string;
+      practice: ModulePracticeInput | null;
       order: number;
       lessons: Array<{
         id: string;
         title: string;
         description: string;
+        order: number;
         durationMinutes: number;
         videoUrl: string | null;
         transcript: string | null;
         contentText: string;
         aiSummary: string | null;
+        quiz: {
+          title: string;
+          questions: unknown;
+        } | null;
+        assignment: {
+          title: string;
+          description: string;
+          rubric: unknown;
+        } | null;
+        checklist: {
+          items: unknown;
+        } | null;
+        quest: {
+          title: string;
+          description: string;
+          rewardPoints: number;
+        } | null;
         hasQuiz: boolean;
         hasAssignment: boolean;
         hasChecklist: boolean;
@@ -564,21 +585,30 @@ export async function getCourseStudioData(
               quiz: {
                 select: {
                   id: true,
+                  title: true,
+                  questions: true,
                 },
               },
               assignment: {
                 select: {
                   id: true,
+                  title: true,
+                  description: true,
+                  rubric: true,
                 },
               },
               checklist: {
                 select: {
                   id: true,
+                  items: true,
                 },
               },
               quest: {
                 select: {
                   id: true,
+                  title: true,
+                  description: true,
+                  rewardPoints: true,
                 },
               },
               order: true,
@@ -672,16 +702,45 @@ export async function getCourseStudioData(
           id: module.id,
           title: module.title,
           description: module.description,
+          practice: module.practice
+            ? coerceModulePractice(module.practice, module.title)
+            : null,
           order: module.order,
           lessons: module.lessons.map((lesson) => ({
             id: lesson.id,
             title: lesson.title,
             description: lesson.description,
+            order: lesson.order,
             durationMinutes: lesson.durationMinutes,
             videoUrl: lesson.videoUrl,
             transcript: lesson.transcript,
             contentText: lesson.contentText,
             aiSummary: lesson.aiSummary,
+            quiz: lesson.quiz
+              ? {
+                  title: lesson.quiz.title,
+                  questions: lesson.quiz.questions,
+                }
+              : null,
+            assignment: lesson.assignment
+              ? {
+                  title: lesson.assignment.title,
+                  description: lesson.assignment.description,
+                  rubric: lesson.assignment.rubric,
+                }
+              : null,
+            checklist: lesson.checklist
+              ? {
+                  items: lesson.checklist.items,
+                }
+              : null,
+            quest: lesson.quest
+              ? {
+                  title: lesson.quest.title,
+                  description: lesson.quest.description,
+                  rewardPoints: lesson.quest.rewardPoints,
+                }
+              : null,
             hasQuiz: Boolean(lesson.quiz),
             hasAssignment: Boolean(lesson.assignment),
             hasChecklist: Boolean(lesson.checklist),

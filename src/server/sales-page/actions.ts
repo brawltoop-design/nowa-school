@@ -19,14 +19,21 @@ import {
   type SalesPageSuggestion,
 } from "@/lib/ai-sales-page";
 import {
+  coerceSalesPageBlockSettings,
   coerceSalesPageObject,
+  coerceSalesPageSectionSettings,
   createDefaultBlockContent,
   createInitialSalesPage,
   getDefaultSalesPageTheme,
+  getAutoSalesPageSectionSettings,
+  getSalesPageBlockLabel,
   type SalesPageBlockContent,
   type SalesPageBlockDraft,
   type SalesPageBlockSettings,
+  type SalesPageSectionSettings,
 } from "@/lib/sales-page";
+import { slugifyCourseTitle } from "@/lib/validators/course";
+import { getAllCourseStudioPaths } from "@/lib/course-studio";
 import {
   adminModerationDecisionSchema,
   moderationSubmissionSchema,
@@ -105,6 +112,9 @@ function revalidateSalesPageSurfaces(courseId: string, courseSlug: string) {
   revalidatePath("/author");
   revalidatePath(`/author/courses/${courseId}/builder`);
   revalidatePath(`/author/courses/${courseId}/studio`);
+  for (const path of getAllCourseStudioPaths(courseId)) {
+    revalidatePath(path);
+  }
   revalidatePath(`/author/courses/${courseId}/preview/sales-page`);
   revalidatePath("/courses");
   revalidatePath(`/courses/${courseSlug}`);
@@ -216,6 +226,51 @@ async function ensureSalesPageForCourse(
   return getCourseForSalesPageAction(courseId, actor);
 }
 
+async function getSalesPageBlockWithContext(
+  blockId: string,
+  actor: SalesPageActor,
+) {
+  const prisma = getPrismaClient();
+  const block = await prisma.salesPageBlock.findUnique({
+    where: { id: blockId },
+    include: {
+      salesPage: {
+        include: {
+          course: {
+            select: {
+              id: true,
+              slug: true,
+              authorId: true,
+            },
+          },
+          blocks: {
+            orderBy: [{ order: "asc" }],
+            select: {
+              id: true,
+              type: true,
+              order: true,
+              title: true,
+              subtitle: true,
+              content: true,
+              settings: true,
+              isVisible: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (
+    !block ||
+    (actor.role !== UserRole.ADMIN && block.salesPage.course.authorId !== actor.userId)
+  ) {
+    return null;
+  }
+
+  return block;
+}
+
 async function reindexSalesPageBlocks(
   tx: Prisma.TransactionClient,
   salesPageId: string,
@@ -238,6 +293,124 @@ async function reindexSalesPageBlocks(
       }),
     ),
   );
+}
+
+async function applySalesPageBlockOrder(
+  tx: Prisma.TransactionClient,
+  orderedIds: string[],
+) {
+  await Promise.all(
+    orderedIds.map((blockId, index) =>
+      tx.salesPageBlock.update({
+        where: { id: blockId },
+        data: {
+          order: -(index + 1),
+        },
+      }),
+    ),
+  );
+
+  await Promise.all(
+    orderedIds.map((blockId, index) =>
+      tx.salesPageBlock.update({
+        where: { id: blockId },
+        data: {
+          order: index + 1,
+        },
+      }),
+    ),
+  );
+}
+
+function createUniqueSectionId(base?: string) {
+  const normalizedBase = slugifyCourseTitle(base ?? "section") || "section";
+  const suffix = crypto.randomUUID().split("-")[0];
+  return `${normalizedBase}-${suffix}`;
+}
+
+function getResolvedSectionSettings(block: {
+  type: SalesPageBlockDraft["type"];
+  settings: Prisma.JsonValue;
+}) {
+  return (
+    coerceSalesPageSectionSettings(block.settings, getDefaultSalesPageTheme()) ??
+    getAutoSalesPageSectionSettings(block.type, getDefaultSalesPageTheme())
+  );
+}
+
+function getSectionRangeForIndex(
+  blocks: Array<{
+    id: string;
+    type: SalesPageBlockDraft["type"];
+    settings: Prisma.JsonValue;
+  }>,
+  index: number,
+) {
+  const section = getResolvedSectionSettings(blocks[index]);
+
+  if (!section) {
+    return {
+      start: index,
+      end: index,
+      section: null,
+    };
+  }
+
+  let start = index;
+  let end = index;
+
+  while (start > 0) {
+    const previousSection = getResolvedSectionSettings(blocks[start - 1]);
+
+    if (previousSection?.id !== section.id) {
+      break;
+    }
+
+    start -= 1;
+  }
+
+  while (end < blocks.length - 1) {
+    const nextSection = getResolvedSectionSettings(blocks[end + 1]);
+
+    if (nextSection?.id !== section.id) {
+      break;
+    }
+
+    end += 1;
+  }
+
+  return {
+    start,
+    end,
+    section,
+  };
+}
+
+function buildSectionBoundSettings(
+  value: Prisma.JsonValue,
+  section: SalesPageSectionSettings | null,
+  overrides?: {
+    sectionId?: string;
+    sectionLabel?: string;
+  },
+) {
+  const settings = coerceSalesPageBlockSettings(value, getDefaultSalesPageTheme());
+
+  if (!section && !overrides?.sectionId && !overrides?.sectionLabel) {
+    return settings;
+  }
+
+  return {
+    ...settings,
+    sectionId: overrides?.sectionId ?? section?.id ?? settings.sectionId,
+    sectionLabel:
+      overrides?.sectionLabel ?? section?.label ?? settings.sectionLabel,
+    sectionStyle: section?.style ?? settings.sectionStyle,
+    sectionAccentColor: section?.accentColor ?? settings.sectionAccentColor,
+    sectionSurfaceColor: section?.surfaceColor ?? settings.sectionSurfaceColor,
+    sectionTextColor: section?.textColor ?? settings.sectionTextColor,
+    sectionBorderColor: section?.borderColor ?? settings.sectionBorderColor,
+  };
 }
 
 function mapExistingBlock(block: {
@@ -436,6 +609,8 @@ export async function saveSalesPageMeta(
 export async function createSalesPageBlock(
   courseId: string,
   type: SalesPageBlockDraft["type"],
+  afterBlockId?: string | null,
+  position: "before" | "after" = "after",
 ): Promise<AuthorActionResult> {
   const prisma = getPrismaClient();
   const actor = await getAuthorActor();
@@ -450,25 +625,49 @@ export async function createSalesPageBlock(
     return unauthorizedResult();
   }
 
-  const lastOrder =
-    course.salesPage.blocks.reduce((max, block) => Math.max(max, block.order), 0) + 1;
+  await prisma.$transaction(async (tx) => {
+    const lastOrder =
+      course.salesPage!.blocks.reduce(
+        (max, block) => Math.max(max, block.order),
+        0,
+      ) + 1;
 
-  await prisma.salesPageBlock.create({
-    data: {
-      salesPageId: course.salesPage.id,
-      type,
-      order: lastOrder,
-      title: type,
-      subtitle: null,
-      content: toInputJson(createDefaultBlockContent(type, mapCourseContext(course))),
-      settings: toInputJson({
-        variant: "default",
-        showModules: true,
-        showLessonCount: true,
-        backgroundStyle: "glass",
-      }),
-      isVisible: true,
-    },
+    const newBlock = await tx.salesPageBlock.create({
+      data: {
+        salesPageId: course.salesPage!.id,
+        type,
+        order: lastOrder,
+        title: type,
+        subtitle: null,
+        content: toInputJson(
+          createDefaultBlockContent(type, mapCourseContext(course)),
+        ),
+        settings: toInputJson({
+          variant: "default",
+          showModules: true,
+          showLessonCount: true,
+          backgroundStyle: "glass",
+        }),
+        isVisible: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (afterBlockId) {
+      const orderedIds = course.salesPage!.blocks
+        .map((block) => block.id)
+        .filter((blockId) => blockId !== newBlock.id);
+      const targetIndex = orderedIds.findIndex((blockId) => blockId === afterBlockId);
+
+      if (targetIndex >= 0) {
+        orderedIds.splice(position === "before" ? targetIndex : targetIndex + 1, 0, newBlock.id);
+        await applySalesPageBlockOrder(tx, orderedIds);
+      }
+    } else if (position === "before") {
+      await applySalesPageBlockOrder(tx, [newBlock.id, ...course.salesPage!.blocks.map((block) => block.id)]);
+    }
   });
 
   await prisma.courseSalesPage.update({
@@ -488,6 +687,316 @@ export async function createSalesPageBlock(
   return {
     success: true,
     message: "Блок добавлен.",
+  };
+}
+
+export async function createSalesPageBlockBatch(
+  courseId: string,
+  types: SalesPageBlockDraft["type"][],
+  afterBlockId?: string | null,
+  position: "before" | "after" = "after",
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const uniqueTypes = types.filter(Boolean);
+
+  if (!uniqueTypes.length) {
+    return {
+      success: false,
+      message: "Выбери хотя бы один блок для вставки.",
+    };
+  }
+
+  const course = await ensureSalesPageForCourse(courseId, actor);
+
+  if (!course?.salesPage) {
+    return unauthorizedResult();
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const lastOrder =
+      course.salesPage!.blocks.reduce(
+        (max, block) => Math.max(max, block.order),
+        0,
+      ) + 1;
+
+    const courseContext = mapCourseContext(course);
+    const createdIds: string[] = [];
+
+    for (const [index, type] of uniqueTypes.entries()) {
+      const createdBlock = await tx.salesPageBlock.create({
+        data: {
+          salesPageId: course.salesPage!.id,
+          type,
+          order: lastOrder + index,
+          title: type,
+          subtitle: null,
+          content: toInputJson(createDefaultBlockContent(type, courseContext)),
+          settings: toInputJson({
+            variant: "default",
+            showModules: true,
+            showLessonCount: true,
+            backgroundStyle: "glass",
+          }),
+          isVisible: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      createdIds.push(createdBlock.id);
+    }
+
+    const orderedIds = course.salesPage!.blocks.map((block) => block.id);
+
+    if (afterBlockId) {
+      const targetIndex = orderedIds.findIndex((blockId) => blockId === afterBlockId);
+
+      if (targetIndex >= 0) {
+        orderedIds.splice(
+          position === "before" ? targetIndex : targetIndex + 1,
+          0,
+          ...createdIds,
+        );
+      } else {
+        orderedIds.push(...createdIds);
+      }
+    } else if (position === "before") {
+      orderedIds.unshift(...createdIds);
+    } else {
+      orderedIds.push(...createdIds);
+    }
+
+    await applySalesPageBlockOrder(tx, orderedIds);
+  });
+
+  await prisma.courseSalesPage.update({
+    where: {
+      id: course.salesPage.id,
+    },
+    data: {
+      status:
+        course.salesPage.status === SalesPageStatus.PUBLISHED
+          ? SalesPageStatus.UNPUBLISHED
+          : SalesPageStatus.DRAFT,
+      rejectionReason: null,
+    },
+  });
+
+  revalidateSalesPageSurfaces(course.id, course.slug);
+
+  return {
+    success: true,
+    message: `${uniqueTypes.length} блоков добавлено в страницу.`,
+  };
+}
+
+export async function insertSalesPageSectionKit(
+  courseId: string,
+  types: SalesPageBlockDraft["type"][],
+  options?: {
+    anchorBlockId?: string | null;
+    position?: "before" | "after";
+    sectionLabel?: string;
+    sectionStyle?: SalesPageBlockSettings["sectionStyle"];
+  },
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const uniqueTypes = types.filter(Boolean);
+
+  if (!uniqueTypes.length) {
+    return {
+      success: false,
+      message: "Выбери хотя бы один блок для новой секции.",
+    };
+  }
+
+  const course = await ensureSalesPageForCourse(courseId, actor);
+
+  if (!course?.salesPage) {
+    return unauthorizedResult();
+  }
+
+  const courseContext = mapCourseContext(course);
+  const baseSection =
+    getAutoSalesPageSectionSettings(uniqueTypes[0], getDefaultSalesPageTheme()) ??
+    getAutoSalesPageSectionSettings("CUSTOM_TEXT", getDefaultSalesPageTheme());
+  const sectionLabel =
+    options?.sectionLabel?.trim() ||
+    `${getSalesPageBlockLabel(uniqueTypes[0])} section`;
+  const sectionId = createUniqueSectionId(sectionLabel);
+
+  await prisma.$transaction(async (tx) => {
+    const lastOrder =
+      course.salesPage!.blocks.reduce(
+        (max, block) => Math.max(max, block.order),
+        0,
+      ) + 1;
+
+    const createdIds: string[] = [];
+
+    for (const [index, type] of uniqueTypes.entries()) {
+      const createdBlock = await tx.salesPageBlock.create({
+        data: {
+          salesPageId: course.salesPage!.id,
+          type,
+          order: lastOrder + index,
+          title: getSalesPageBlockLabel(type),
+          subtitle: null,
+          content: toInputJson(createDefaultBlockContent(type, courseContext)),
+          settings: toInputJson(
+            buildSectionBoundSettings(
+              {
+                variant: "default",
+                showModules: true,
+                showLessonCount: true,
+                backgroundStyle: "glass",
+              },
+              {
+                id: sectionId,
+                label: sectionLabel,
+                style: options?.sectionStyle ?? baseSection?.style ?? "soft",
+                accentColor:
+                  baseSection?.accentColor ?? getDefaultSalesPageTheme().accent,
+                surfaceColor:
+                  baseSection?.surfaceColor ?? getDefaultSalesPageTheme().surface,
+                textColor:
+                  baseSection?.textColor ?? getDefaultSalesPageTheme().text,
+                borderColor:
+                  baseSection?.borderColor ??
+                  "rgba(5, 7, 11, 0.08)",
+              },
+            ),
+          ),
+          isVisible: true,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      createdIds.push(createdBlock.id);
+    }
+
+    const orderedIds = course.salesPage!.blocks.map((block) => block.id);
+    const anchorBlockId = options?.anchorBlockId;
+    const position = options?.position ?? "after";
+
+    if (anchorBlockId) {
+      const targetIndex = orderedIds.findIndex((blockId) => blockId === anchorBlockId);
+
+      if (targetIndex >= 0) {
+        orderedIds.splice(
+          position === "before" ? targetIndex : targetIndex + 1,
+          0,
+          ...createdIds,
+        );
+      } else {
+        orderedIds.push(...createdIds);
+      }
+    } else if (position === "before") {
+      orderedIds.unshift(...createdIds);
+    } else {
+      orderedIds.push(...createdIds);
+    }
+
+    await applySalesPageBlockOrder(tx, orderedIds);
+
+    await tx.courseSalesPage.update({
+      where: {
+        id: course.salesPage!.id,
+      },
+      data: {
+        status:
+          course.salesPage!.status === SalesPageStatus.PUBLISHED
+            ? SalesPageStatus.UNPUBLISHED
+            : SalesPageStatus.DRAFT,
+        rejectionReason: null,
+      },
+    });
+  });
+
+  revalidateSalesPageSurfaces(course.id, course.slug);
+
+  return {
+    success: true,
+    message: `Новая секция "${sectionLabel}" добавлена.`,
+  };
+}
+
+export async function replaceSalesPageBlockType(
+  blockId: string,
+  nextType: SalesPageBlockDraft["type"],
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const block = await getSalesPageBlockWithContext(blockId, actor);
+
+  if (!block) {
+    return unauthorizedResult();
+  }
+
+  const course = await getCourseForSalesPageAction(block.salesPage.course.id, actor);
+
+  if (!course) {
+    return unauthorizedResult();
+  }
+
+  const currentSettings = coerceSalesPageBlockSettings(
+    block.settings,
+    getDefaultSalesPageTheme(),
+  );
+
+  await prisma.$transaction(async (tx) => {
+    await tx.salesPageBlock.update({
+      where: { id: block.id },
+      data: {
+        type: nextType,
+        title: getSalesPageBlockLabel(nextType),
+        subtitle: null,
+        content: toInputJson(
+          createDefaultBlockContent(nextType, mapCourseContext(course)),
+        ),
+        settings: toInputJson(currentSettings),
+      },
+    });
+
+    await tx.courseSalesPage.update({
+      where: {
+        id: block.salesPageId,
+      },
+      data: {
+        status:
+          block.salesPage.status === SalesPageStatus.PUBLISHED
+            ? SalesPageStatus.UNPUBLISHED
+            : SalesPageStatus.DRAFT,
+        rejectionReason: null,
+      },
+    });
+  });
+
+  revalidateSalesPageSurfaces(block.salesPage.course.id, block.salesPage.course.slug);
+
+  return {
+    success: true,
+    message: `Блок заменен на ${getSalesPageBlockLabel(nextType)}.`,
   };
 }
 
@@ -657,6 +1166,322 @@ export async function moveSalesPageBlock(
   return {
     success: true,
     message: "Порядок блоков обновлен.",
+  };
+}
+
+export async function reorderSalesPageBlocks(
+  courseId: string,
+  orderedIds: string[],
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const course = await ensureSalesPageForCourse(courseId, actor);
+
+  if (!course?.salesPage) {
+    return unauthorizedResult();
+  }
+
+  const currentIds = course.salesPage.blocks
+    .map((block) => block.id)
+    .sort();
+  const nextIds = [...orderedIds].sort();
+
+  if (
+    currentIds.length !== nextIds.length ||
+    currentIds.some((id, index) => id !== nextIds[index])
+  ) {
+    return {
+      success: false,
+      message: "Не удалось сохранить новый порядок блоков.",
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await applySalesPageBlockOrder(tx, orderedIds);
+
+    await tx.courseSalesPage.update({
+      where: {
+        id: course.salesPage!.id,
+      },
+      data: {
+        status:
+          course.salesPage!.status === SalesPageStatus.PUBLISHED
+            ? SalesPageStatus.UNPUBLISHED
+            : SalesPageStatus.DRAFT,
+        rejectionReason: null,
+      },
+    });
+  });
+
+  revalidateSalesPageSurfaces(course.id, course.slug);
+
+  return {
+    success: true,
+    message: "Drag-and-drop порядок сохранен.",
+  };
+}
+
+export async function moveSalesPageSection(
+  blockId: string,
+  direction: "up" | "down",
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const block = await getSalesPageBlockWithContext(blockId, actor);
+
+  if (!block) {
+    return unauthorizedResult();
+  }
+
+  const blocks = block.salesPage.blocks;
+  const currentIndex = blocks.findIndex((item) => item.id === block.id);
+
+  if (currentIndex === -1) {
+    return {
+      success: false,
+      message: "Секция не найдена.",
+    };
+  }
+
+  const currentRange = getSectionRangeForIndex(blocks, currentIndex);
+
+  if (direction === "up" && currentRange.start === 0) {
+    return {
+      success: false,
+      message: "Эта секция уже находится вверху.",
+    };
+  }
+
+  if (direction === "down" && currentRange.end === blocks.length - 1) {
+    return {
+      success: false,
+      message: "Эта секция уже находится внизу.",
+    };
+  }
+
+  const adjacentIndex =
+    direction === "up" ? currentRange.start - 1 : currentRange.end + 1;
+  const adjacentRange = getSectionRangeForIndex(blocks, adjacentIndex);
+  const beforeCurrent = blocks.slice(0, currentRange.start).map((item) => item.id);
+  const currentIds = blocks
+    .slice(currentRange.start, currentRange.end + 1)
+    .map((item) => item.id);
+  const beforeAdjacent = blocks.slice(0, adjacentRange.start).map((item) => item.id);
+  const adjacentIds = blocks
+    .slice(adjacentRange.start, adjacentRange.end + 1)
+    .map((item) => item.id);
+  const afterAdjacent = blocks.slice(adjacentRange.end + 1).map((item) => item.id);
+  const afterCurrent = blocks.slice(currentRange.end + 1).map((item) => item.id);
+
+  const orderedIds =
+    direction === "up"
+      ? [
+          ...beforeAdjacent,
+          ...currentIds,
+          ...adjacentIds,
+          ...afterCurrent,
+        ]
+      : [
+          ...beforeCurrent,
+          ...adjacentIds,
+          ...currentIds,
+          ...afterAdjacent,
+        ];
+
+  await prisma.$transaction(async (tx) => {
+    await applySalesPageBlockOrder(tx, orderedIds);
+
+    await tx.courseSalesPage.update({
+      where: {
+        id: block.salesPageId,
+      },
+      data: {
+        status:
+          block.salesPage.status === SalesPageStatus.PUBLISHED
+            ? SalesPageStatus.UNPUBLISHED
+            : SalesPageStatus.DRAFT,
+        rejectionReason: null,
+      },
+    });
+  });
+
+  revalidateSalesPageSurfaces(block.salesPage.course.id, block.salesPage.course.slug);
+
+  return {
+    success: true,
+    message: "Секция переставлена.",
+  };
+}
+
+export async function duplicateSalesPageSection(
+  blockId: string,
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const block = await getSalesPageBlockWithContext(blockId, actor);
+
+  if (!block) {
+    return unauthorizedResult();
+  }
+
+  const blocks = block.salesPage.blocks;
+  const currentIndex = blocks.findIndex((item) => item.id === block.id);
+
+  if (currentIndex === -1) {
+    return {
+      success: false,
+      message: "Секция не найдена.",
+    };
+  }
+
+  const currentRange = getSectionRangeForIndex(blocks, currentIndex);
+  const sourceSection = currentRange.section;
+  const sectionBlocks = blocks.slice(currentRange.start, currentRange.end + 1);
+  const sourceLabel =
+    sourceSection?.label?.trim() ||
+    sectionBlocks[0]?.title ||
+    getSalesPageBlockLabel(sectionBlocks[0]?.type ?? "CUSTOM_TEXT");
+  const duplicatedLabel = `${sourceLabel} copy`;
+  const duplicatedSectionId = createUniqueSectionId(
+    sourceSection?.id || sourceLabel,
+  );
+
+  await prisma.$transaction(async (tx) => {
+    const lastOrder =
+      blocks.reduce((max, item) => Math.max(max, item.order), 0) + 1;
+    const createdIds: string[] = [];
+
+    for (const [index, sectionBlock] of sectionBlocks.entries()) {
+      const duplicated = await tx.salesPageBlock.create({
+        data: {
+          salesPageId: block.salesPageId,
+          type: sectionBlock.type,
+          order: lastOrder + index,
+          title: sectionBlock.title,
+          subtitle: sectionBlock.subtitle,
+          content: toInputJson(sectionBlock.content),
+          settings: toInputJson(
+            buildSectionBoundSettings(sectionBlock.settings, sourceSection, {
+              sectionId: duplicatedSectionId,
+              sectionLabel: duplicatedLabel,
+            }),
+          ),
+          isVisible: sectionBlock.isVisible,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      createdIds.push(duplicated.id);
+    }
+
+    const orderedIds = blocks.map((item) => item.id);
+    orderedIds.splice(currentRange.end + 1, 0, ...createdIds);
+    await applySalesPageBlockOrder(tx, orderedIds);
+
+    await tx.courseSalesPage.update({
+      where: {
+        id: block.salesPageId,
+      },
+      data: {
+        status:
+          block.salesPage.status === SalesPageStatus.PUBLISHED
+            ? SalesPageStatus.UNPUBLISHED
+            : SalesPageStatus.DRAFT,
+        rejectionReason: null,
+      },
+    });
+  });
+
+  revalidateSalesPageSurfaces(block.salesPage.course.id, block.salesPage.course.slug);
+
+  return {
+    success: true,
+    message: `Секция "${duplicatedLabel}" продублирована.`,
+  };
+}
+
+export async function deleteSalesPageSection(
+  blockId: string,
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getAuthorActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const block = await getSalesPageBlockWithContext(blockId, actor);
+
+  if (!block) {
+    return unauthorizedResult();
+  }
+
+  const blocks = block.salesPage.blocks;
+  const currentIndex = blocks.findIndex((item) => item.id === block.id);
+
+  if (currentIndex === -1) {
+    return {
+      success: false,
+      message: "Секция не найдена.",
+    };
+  }
+
+  const currentRange = getSectionRangeForIndex(blocks, currentIndex);
+  const sectionLabel =
+    currentRange.section?.label ||
+    blocks[currentRange.start]?.title ||
+    "Section";
+  const idsToDelete = blocks
+    .slice(currentRange.start, currentRange.end + 1)
+    .map((item) => item.id);
+
+  await prisma.$transaction(async (tx) => {
+    await tx.salesPageBlock.deleteMany({
+      where: {
+        id: {
+          in: idsToDelete,
+        },
+      },
+    });
+
+    await reindexSalesPageBlocks(tx, block.salesPageId);
+
+    await tx.courseSalesPage.update({
+      where: {
+        id: block.salesPageId,
+      },
+      data: {
+        status:
+          block.salesPage.status === SalesPageStatus.PUBLISHED
+            ? SalesPageStatus.UNPUBLISHED
+            : SalesPageStatus.DRAFT,
+        rejectionReason: null,
+      },
+    });
+  });
+
+  revalidateSalesPageSurfaces(block.salesPage.course.id, block.salesPage.course.slug);
+
+  return {
+    success: true,
+    message: `Секция "${sectionLabel}" удалена.`,
   };
 }
 

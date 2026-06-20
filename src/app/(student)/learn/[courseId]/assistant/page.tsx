@@ -84,8 +84,8 @@ export default async function LearnAssistantPage({
                 AI-наставник по курсу
               </h1>
               <p className="mt-3 text-sm leading-7 text-black/56">
-                {course.title}. Assistant отвечает только на основе описания курса,
-                lesson content, transcript и AI-summary.
+                {course.title}. AI-наставник отвечает только на основе описания курса,
+                материала уроков, транскрипта и AI-выжимки.
               </p>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
@@ -138,7 +138,7 @@ export default async function LearnAssistantPage({
                 {
                   icon: Sparkles,
                   title: "Проси короткую выжимку",
-                  text: "Assistant соберет recap только по уже загруженным материалам курса.",
+                  text: "AI-наставник соберет короткую выжимку только по уже загруженным материалам курса.",
                 },
                 {
                   icon: Shield,
@@ -176,13 +176,13 @@ export default async function LearnAssistantPage({
             <div className="relative">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <Badge variant="subtle">Context stuffing MVP</Badge>
+                  <Badge variant="subtle">MVP-контекст курса</Badge>
                   <h2 className="mt-4 text-[clamp(2.4rem,4vw,4.4rem)] font-semibold leading-[0.95] tracking-tight text-black">
                     Спроси про курс так, будто рядом лучший куратор.
                   </h2>
                   <p className="mt-4 max-w-3xl text-base leading-8 text-black/58 sm:text-lg">
-                    Assistant видит структуру курса, описания модулей и уроков,
-                    contentText, transcript и AI-summary. Никаких внешних знаний,
+                    AI-наставник видит структуру курса, описания модулей и уроков,
+                    текст урока, транскрипт и AI-выжимку. Никаких внешних знаний,
                     только твой учебный контекст.
                   </p>
                 </div>
@@ -194,7 +194,7 @@ export default async function LearnAssistantPage({
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.16em] text-black/36">
-                        History
+                        История
                       </p>
                       <p className="mt-1 text-xl font-semibold tracking-tight text-black">
                         {messages.length} сообщений

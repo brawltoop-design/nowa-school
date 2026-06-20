@@ -33,7 +33,7 @@ const authorFeatures = [
   },
   {
     icon: Layers3,
-    title: "Course builder",
+    title: "Конструктор курса",
     text: "Модули, уроки, видео, тексты, статусы и структура курса без ощущения старой CMS.",
   },
   {
@@ -49,7 +49,7 @@ const authorFeatures = [
   {
     icon: BadgeCheck,
     title: "Геймификация",
-    text: "Бейджи, points, streak, прогресс и задания помогают ученику видеть движение.",
+    text: "Бейджи, очки, серия, прогресс и задания помогают ученику видеть движение.",
   },
   {
     icon: FileQuestion,
@@ -80,7 +80,7 @@ export default function AuthorsPage() {
 
             <div className="space-y-5">
               <h1 className="max-w-5xl text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl lg:text-7xl">
-                Запускай курсы как premium digital-продукты, а не как папку с видео
+                Запускай курсы как премиальные digital-продукты, а не как папку с видео
               </h1>
               <p className="max-w-3xl text-lg leading-8 text-black/62 sm:text-xl">
                 nowa school помогает автору упаковать курс: программа, задания,
@@ -106,10 +106,10 @@ export default function AuthorsPage() {
               <div className="rounded-[2rem] bg-black p-6 text-white">
                 <GraduationCap className="size-7 text-[#9ea7ff]" />
                 <h2 className="mt-5 text-3xl font-semibold tracking-tight">
-                  CourseForge workspace
+                  Пространство автора
                 </h2>
                 <div className="mt-6 grid gap-3">
-                  {["AI summary", "Quiz", "Homework", "Badge", "Assistant"].map(
+                  {["AI-выжимка", "Тест", "Домашка", "Бейдж", "Помощник"].map(
                     (item) => (
                       <div
                         key={item}

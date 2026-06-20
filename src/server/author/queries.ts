@@ -6,6 +6,8 @@ import {
 } from "@prisma/client";
 import type { LessonMaterial } from "@/lib/lesson-materials";
 import { parseLessonMaterials } from "@/lib/lesson-materials";
+import type { ModulePracticeInput } from "@/lib/module-practice";
+import { coerceModulePractice } from "@/lib/module-practice";
 import { getPrismaClient } from "@/server/db";
 
 export type AuthorActor = {
@@ -93,6 +95,7 @@ export type AuthorBuilderModule = {
   id: string;
   title: string;
   description: string;
+  practice: ModulePracticeInput | null;
   order: number;
   lessons: AuthorBuilderLesson[];
 };
@@ -124,8 +127,90 @@ export type AuthorBuilderCourse = {
   modules: AuthorBuilderModule[];
 };
 
+export type AuthorCourseStudioShellData = {
+  id: string;
+  title: string;
+  slug: string;
+  status: CourseStatus;
+  category: string;
+  level: string;
+  salesPageStatus: SalesPageStatus | null;
+  metrics: {
+    moduleCount: number;
+    lessonCount: number;
+  };
+};
+
 function buildCourseAccessWhere(actor: AuthorActor) {
   return actor.role === UserRole.ADMIN ? {} : { authorId: actor.userId };
+}
+
+export async function getAuthorCourseStudioShellData(
+  courseId: string,
+  actor: AuthorActor,
+): Promise<
+  | { status: "ok"; data: AuthorCourseStudioShellData }
+  | { status: "forbidden" }
+  | { status: "not_found" }
+> {
+  const prisma = getPrismaClient();
+  const course = await prisma.course.findFirst({
+    where: {
+      id: courseId,
+      ...buildCourseAccessWhere(actor),
+    },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      status: true,
+      category: true,
+      level: true,
+      modules: {
+        select: {
+          _count: {
+            select: {
+              lessons: true,
+            },
+          },
+        },
+      },
+      salesPage: {
+        select: {
+          status: true,
+        },
+      },
+    },
+  });
+
+  if (!course) {
+    const exists = await prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true },
+    });
+
+    return exists ? { status: "forbidden" } : { status: "not_found" };
+  }
+
+  return {
+    status: "ok",
+    data: {
+      id: course.id,
+      title: course.title,
+      slug: course.slug,
+      status: course.status,
+      category: course.category,
+      level: course.level,
+      salesPageStatus: course.salesPage?.status ?? null,
+      metrics: {
+        moduleCount: course.modules.length,
+        lessonCount: course.modules.reduce(
+          (sum, module) => sum + module._count.lessons,
+          0,
+        ),
+      },
+    },
+  };
 }
 
 export async function getAuthorDashboardData(
@@ -412,6 +497,9 @@ export async function getAuthorCourseBuilderData(
         id: module.id,
         title: module.title,
         description: module.description,
+        practice: module.practice
+          ? coerceModulePractice(module.practice, module.title)
+          : null,
         order: module.order,
         lessons: module.lessons.map((lesson) => ({
           ...lesson,

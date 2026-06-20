@@ -8,35 +8,35 @@ import { SectionHeader } from "@/components/premium/section-header";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Платный Telegram nowa school",
+  title: "Платный Телеграм nowa school",
   description:
-    "Закрытый Telegram с prompts, файлами, разборами, обновлениями AI-инструментов и практическими сценариями.",
+    "Закрытый Телеграм с промтами, файлами, разборами, обновлениями AI-инструментов и практическими сценариями.",
 };
 
 const schedule = [
-  "Понедельник: prompts и короткий AI-сценарий",
+  "Понедельник: промты и короткий AI-сценарий",
   "Среда: разбор проекта или ошибки",
-  "Пятница: файлы недели и tool stack",
-  "Воскресенье: roadmap на следующий спринт",
+  "Пятница: файлы недели и набор инструментов",
+  "Воскресенье: план на следующий спринт",
 ];
 
 const files = [
-  "prompt packs",
+  "наборы промтов",
   "шаблоны лендингов",
   "Notion-таблицы",
-  "starter repositories",
+  "стартовые репозитории",
   "чеклисты запуска",
   "разборы AI-агентов",
 ];
 
 const tariffs = [
   {
-    title: "Library",
+    title: "Библиотека",
     price: "990 ₽/мес",
-    text: "Доступ к файлам, prompts и еженедельным обновлениям.",
+    text: "Доступ к файлам, промтам и еженедельным обновлениям.",
   },
   {
-    title: "Builder",
+    title: "Практика",
     price: "1990 ₽/мес",
     text: "Библиотека, разборы, приоритетные вопросы и рабочие спринты.",
   },
@@ -48,12 +48,12 @@ export default function TelegramPage() {
       <div className="app-shell space-y-10">
         <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
           <div>
-            <Badge variant="primary">Telegram Club</Badge>
+            <Badge variant="primary">Телеграм-клуб</Badge>
             <h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl">
               Закрытый канал для тех, кто собирает AI-продукты регулярно
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-black/62">
-              Prompts, файлы, разборы, обновления инструментов и практические
+              Промты, файлы, разборы, обновления инструментов и практические
               сценарии без обещаний легкого результата. Ты получаешь рабочую
               среду, где проще не бросить после первого интереса.
             </p>
@@ -62,7 +62,7 @@ export default function TelegramPage() {
                 <Link href="/pricing">Смотреть тарифы</Link>
               </PremiumButton>
               <PremiumButton asChild tone="secondary" className="h-12 px-6">
-                <Link href="/free">Сначала starter kit</Link>
+                <Link href="/free">Сначала стартовый набор</Link>
               </PremiumButton>
             </div>
           </div>
@@ -70,7 +70,7 @@ export default function TelegramPage() {
           <PremiumCard padding="lg" className="rounded-[2.4rem] bg-black text-white">
             <MessageCircle className="size-6 text-white/72" />
             <h2 className="mt-5 text-3xl font-semibold tracking-tight">
-              Что внутри Telegram
+              Что внутри Телеграма
             </h2>
             <div className="mt-6 grid gap-3">
               {files.slice(0, 4).map((item) => (
@@ -129,7 +129,7 @@ export default function TelegramPage() {
           <SectionHeader
             eyebrow="Тарифы"
             title="Можно начать без большого платежа"
-            description="Подписка снижает price shock и дает регулярный доступ к материалам."
+            description="Подписка снижает барьер входа и дает регулярный доступ к материалам."
           />
           <div className="mt-8 grid gap-5 md:grid-cols-2">
             {tariffs.map((tariff) => (

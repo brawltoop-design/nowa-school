@@ -84,6 +84,45 @@ const gradientCover = (title: string, from: string, to: string) => {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 };
 
+const createModulePracticeSeed = (
+  moduleTitle: string,
+  moduleDescription: string,
+) => ({
+  type: "PROJECT",
+  title: `Module deliverable: ${moduleTitle}`,
+  summary: `${moduleDescription} Turn this module into a visible result the student can present, publish, or submit for feedback.`,
+  outcome: "A polished deliverable that proves the student can apply the module end to end.",
+  submissionLabel: "Notion page, Figma link, Loom demo, PDF or repository",
+  deliverables: [
+    {
+      text: `Main output for ${moduleTitle}`,
+      required: true,
+    },
+    {
+      text: "Short rationale behind the solution",
+      required: true,
+    },
+    {
+      text: "Optional polish layer or bonus improvement",
+      required: false,
+    },
+  ],
+  checklist: [
+    {
+      text: "Complete every lesson in the module",
+      required: true,
+    },
+    {
+      text: "Assemble the final module output",
+      required: true,
+    },
+    {
+      text: "Prepare the work for review or publication",
+      required: false,
+    },
+  ],
+});
+
 const users = {
   admin: {
     name: "Elena Voronina",
@@ -476,6 +515,10 @@ async function seedCourses(userMap: Map<string, { id: string; name: string; emai
           courseId: course.id,
           title: moduleSeed.title,
           description: moduleSeed.description,
+          practice: createModulePracticeSeed(
+            moduleSeed.title,
+            moduleSeed.description,
+          ),
           order: moduleIndex + 1,
         },
       });

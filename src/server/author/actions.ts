@@ -14,7 +14,16 @@ import {
   generateQuest,
   generateQuiz,
 } from "@/lib/ai";
+import { getAllCourseStudioPaths } from "@/lib/course-studio";
+import {
+  modulePracticeSchema,
+  type ModulePracticeInput,
+} from "@/lib/module-practice";
 import { createInitialSalesPage } from "@/lib/sales-page";
+import {
+  authorLessonPracticeSchema,
+  type AuthorLessonPracticeInput,
+} from "@/lib/validators/author-practice";
 import {
   courseFormSchema,
   courseOverviewSchema,
@@ -144,6 +153,12 @@ function revalidateAuthorCourse(courseId: string, slug?: string | null) {
   revalidatePath("/author");
   revalidatePath("/author/courses/new");
   revalidatePath(`/author/courses/${courseId}/builder`);
+  revalidatePath(`/author/courses/${courseId}/studio`);
+
+  for (const path of getAllCourseStudioPaths(courseId)) {
+    revalidatePath(path);
+  }
+
   revalidatePath("/courses");
   revalidatePath(`/learn/${courseId}`);
   revalidatePath(`/learn/${courseId}/assistant`);
@@ -462,6 +477,79 @@ export async function updateAuthorModule(
   return {
     success: true,
     message: "Модуль обновлен.",
+  };
+}
+
+export async function saveAuthorModulePractice(
+  moduleId: string,
+  values: ModulePracticeInput | null,
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getActionActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const courseModule = await prisma.module.findUnique({
+    where: { id: moduleId },
+    include: {
+      course: {
+        select: {
+          id: true,
+          slug: true,
+          authorId: true,
+        },
+      },
+    },
+  });
+
+  if (
+    !courseModule ||
+    (actor.role !== UserRole.ADMIN &&
+      courseModule.course.authorId !== actor.userId)
+  ) {
+    return unauthorizedResult();
+  }
+
+  if (values === null) {
+    await prisma.module.update({
+      where: { id: moduleId },
+      data: {
+        practice: Prisma.JsonNull,
+      },
+    });
+
+    revalidateAuthorCourse(courseModule.course.id, courseModule.course.slug);
+
+    return {
+      success: true,
+      message: "Модульное задание отключено.",
+    };
+  }
+
+  const parsed = modulePracticeSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Проверь настройки модульного задания.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  await prisma.module.update({
+    where: { id: moduleId },
+    data: {
+      practice: toInputJson(parsed.data),
+    },
+  });
+
+  revalidateAuthorCourse(courseModule.course.id, courseModule.course.slug);
+
+  return {
+    success: true,
+    message: "Модульное задание сохранено.",
   };
 }
 
@@ -916,6 +1004,132 @@ export async function generateAuthorLessonAiContent(
         "Не удалось сгенерировать AI-материалы. Проверь transcript или AI provider.",
     };
   }
+}
+
+export async function saveAuthorLessonPractice(
+  lessonId: string,
+  values: AuthorLessonPracticeInput,
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getActionActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    include: {
+      module: {
+        include: {
+          course: {
+            select: {
+              id: true,
+              slug: true,
+              authorId: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (
+    !lesson ||
+    (actor.role !== UserRole.ADMIN &&
+      lesson.module.course.authorId !== actor.userId)
+  ) {
+    return unauthorizedResult();
+  }
+
+  const parsed = authorLessonPracticeSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Проверь practice-блоки урока.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  await prisma.$transaction(async (tx) => {
+    if (parsed.data.quiz) {
+      await tx.quiz.upsert({
+        where: { lessonId },
+        create: {
+          lessonId,
+          title: parsed.data.quiz.title,
+          questions: parsed.data.quiz.questions,
+        },
+        update: {
+          title: parsed.data.quiz.title,
+          questions: parsed.data.quiz.questions,
+        },
+      });
+    } else {
+      await tx.quiz.deleteMany({ where: { lessonId } });
+    }
+
+    if (parsed.data.assignment) {
+      await tx.assignment.upsert({
+        where: { lessonId },
+        create: {
+          lessonId,
+          title: parsed.data.assignment.title,
+          description: parsed.data.assignment.description,
+          rubric: parsed.data.assignment.rubric,
+        },
+        update: {
+          title: parsed.data.assignment.title,
+          description: parsed.data.assignment.description,
+          rubric: parsed.data.assignment.rubric,
+        },
+      });
+    } else {
+      await tx.assignment.deleteMany({ where: { lessonId } });
+    }
+
+    if (parsed.data.checklist) {
+      await tx.checklist.upsert({
+        where: { lessonId },
+        create: {
+          lessonId,
+          items: parsed.data.checklist.items,
+        },
+        update: {
+          items: parsed.data.checklist.items,
+        },
+      });
+    } else {
+      await tx.checklist.deleteMany({ where: { lessonId } });
+    }
+
+    if (parsed.data.quest) {
+      await tx.quest.upsert({
+        where: { lessonId },
+        create: {
+          lessonId,
+          title: parsed.data.quest.title,
+          description: parsed.data.quest.description,
+          rewardPoints: parsed.data.quest.rewardPoints,
+        },
+        update: {
+          title: parsed.data.quest.title,
+          description: parsed.data.quest.description,
+          rewardPoints: parsed.data.quest.rewardPoints,
+        },
+      });
+    } else {
+      await tx.quest.deleteMany({ where: { lessonId } });
+    }
+  });
+
+  revalidateAuthorCourse(lesson.module.course.id, lesson.module.course.slug);
+
+  return {
+    success: true,
+    message: "Practice layer обновлен.",
+  };
 }
 
 export async function deleteAuthorLesson(

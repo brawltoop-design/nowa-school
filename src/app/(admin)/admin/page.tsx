@@ -30,7 +30,7 @@ export default async function AdminPage() {
       <Breadcrumbs items={[{ label: "Админка" }]} />
 
       <SectionHeader
-        eyebrow="Admin command"
+        eyebrow="Админ-панель"
         title="Операционная панель"
         description="Деньги, пользователи, курсы и последние события платформы в одном спокойном рабочем экране."
       />
@@ -39,7 +39,7 @@ export default async function AdminPage() {
         <PremiumCard padding="lg" className="rounded-[2.4rem] bg-white/92 backdrop-blur-xl">
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
-              <Badge variant="primary">Live operations</Badge>
+              <Badge variant="primary">Живые операции</Badge>
               <h2 className="mt-4 max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-black sm:text-4xl">
                 Контроль качества, экономики и доступа без ощущения старой CMS.
               </h2>
@@ -47,13 +47,13 @@ export default async function AdminPage() {
 
             <div className="grid min-w-[220px] gap-3">
               <div className="rounded-[1.5rem] bg-[#f6f7fa] px-5 py-4">
-                <p className="text-sm text-black/46">Paid orders</p>
+                <p className="text-sm text-black/46">Оплаченные заказы</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
                   {data.metrics.paidOrders}
                 </p>
               </div>
               <div className="rounded-[1.5rem] bg-[#f6f7fa] px-5 py-4">
-                <p className="text-sm text-black/46">Published</p>
+                <p className="text-sm text-black/46">Опубликованные</p>
                 <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
                   {data.metrics.publishedCourses}
                 </p>
@@ -66,12 +66,12 @@ export default async function AdminPage() {
           padding="lg"
           className="rounded-[2.2rem] border-transparent bg-black text-white"
         >
-          <p className="text-sm text-white/56">Platform revenue</p>
+          <p className="text-sm text-white/56">Доход платформы</p>
           <p className="mt-3 text-4xl font-semibold tracking-tight">
             {formatCurrency(data.metrics.platformRevenue, "USD")}
           </p>
           <p className="mt-3 text-sm leading-6 text-white/72">
-            комиссия платформы с paid orders
+            комиссия платформы с оплаченных заказов
           </p>
         </PremiumCard>
       </div>
@@ -93,13 +93,13 @@ export default async function AdminPage() {
           icon={GraduationCap}
           label="Ученики"
           value={String(data.metrics.totalStudents)}
-          description="покупатели и learners"
+          description="покупатели и ученики"
         />
         <StatCard
           icon={BookOpen}
           label="Всего курсов"
           value={String(data.metrics.totalCourses)}
-          description="draft, published и blocked"
+          description="черновики, опубликованные и заблокированные"
         />
         <StatCard
           icon={BookOpen}
@@ -130,7 +130,7 @@ export default async function AdminPage() {
       <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
         <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/92 backdrop-blur-xl">
           <SectionHeader
-            eyebrow="Orders"
+            eyebrow="Заказы"
             title="Последние заказы"
             description="Покупатель, курс, статус и экономика сделки."
           />
@@ -166,7 +166,7 @@ export default async function AdminPage() {
                           {formatCurrency(order.amount, "USD")}
                         </p>
                         <p className="text-black/46">
-                          {formatCurrency(order.platformFee, "USD")} platform
+                          {formatCurrency(order.platformFee, "USD")} платформа
                         </p>
                       </td>
                       <td className="px-5 py-4">
@@ -237,19 +237,19 @@ export default async function AdminPage() {
       <StaggerGrid className="grid gap-5 md:grid-cols-3">
         <StatCard
           icon={CircleDollarSign}
-          label="Take rate"
+          label="Комиссия платформы"
           value="15%"
           description="комиссия платформы"
         />
         <StatCard
           icon={Banknote}
-          label="Author share"
+          label="Доля автора"
           value="85%"
           description="выплаты авторам"
         />
         <StatCard
           icon={ShoppingBag}
-          label="Paid orders"
+          label="Оплаченные заказы"
           value={String(data.metrics.paidOrders)}
           description="успешные покупки"
         />

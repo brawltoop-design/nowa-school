@@ -29,6 +29,12 @@ function parseOrderStatus(value: string | string[] | undefined) {
 const controlClass =
   "h-[52px] rounded-full border border-black/10 bg-[#f8f8f8] px-5 text-sm text-black outline-none transition duration-200 focus:border-[#3d3bff]/40 focus:bg-white";
 
+const orderStatusLabel = {
+  PENDING: "Ожидает",
+  PAID: "Оплачен",
+  REFUNDED: "Возврат",
+} as const;
+
 export default async function AdminOrdersPage({
   searchParams,
 }: AdminOrdersPageProps) {
@@ -55,26 +61,26 @@ export default async function AdminOrdersPage({
       />
 
       <SectionHeader
-        eyebrow="Payments"
+        eyebrow="Платежи"
         title="Заказы"
         description="Финансовый журнал с суммой заказа, комиссией платформы и выплатой автору."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
         <PremiumCard padding="lg" className="rounded-[2rem] bg-white/92">
-          <p className="text-sm text-black/46">Amount</p>
+          <p className="text-sm text-black/46">Сумма</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
             {formatCurrency(totals.amount, "USD")}
           </p>
         </PremiumCard>
         <PremiumCard padding="lg" className="rounded-[2rem] bg-white/92">
-          <p className="text-sm text-black/46">Platform fee</p>
+          <p className="text-sm text-black/46">Комиссия платформы</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
             {formatCurrency(totals.platformFee, "USD")}
           </p>
         </PremiumCard>
         <PremiumCard padding="lg" className="rounded-[2rem] bg-white/92">
-          <p className="text-sm text-black/46">Author revenue</p>
+          <p className="text-sm text-black/46">Доход автора</p>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-black">
             {formatCurrency(totals.authorRevenue, "USD")}
           </p>
@@ -95,9 +101,9 @@ export default async function AdminOrdersPage({
 
           <select name="status" defaultValue={status} className={controlClass}>
             <option value="ALL">Все статусы</option>
-            <option value={OrderStatus.PENDING}>Pending</option>
-            <option value={OrderStatus.PAID}>Paid</option>
-            <option value={OrderStatus.REFUNDED}>Refunded</option>
+            <option value={OrderStatus.PENDING}>Ожидает</option>
+            <option value={OrderStatus.PAID}>Оплачен</option>
+            <option value={OrderStatus.REFUNDED}>Возврат</option>
           </select>
 
           <button className="h-[52px] rounded-full bg-[#3d3bff] px-6 text-sm font-medium text-white transition duration-200 hover:bg-[#2f2de8]">
@@ -114,7 +120,7 @@ export default async function AdminOrdersPage({
               {orders.length}
             </p>
           </div>
-          <Badge variant="subtle">Mock checkout ready</Badge>
+          <Badge variant="subtle">Демо-оплата подключена</Badge>
         </div>
 
         {orders.length ? (
@@ -124,12 +130,12 @@ export default async function AdminOrdersPage({
                 <tr>
                   <th className="px-5 py-4 font-medium">Покупатель</th>
                   <th className="px-5 py-4 font-medium">Курс</th>
-                  <th className="px-5 py-4 font-medium">Amount</th>
-                  <th className="px-5 py-4 font-medium">Platform fee</th>
-                  <th className="px-5 py-4 font-medium">Author revenue</th>
+                  <th className="px-5 py-4 font-medium">Сумма</th>
+                  <th className="px-5 py-4 font-medium">Комиссия платформы</th>
+                  <th className="px-5 py-4 font-medium">Доход автора</th>
                   <th className="px-5 py-4 font-medium">Статус</th>
                   <th className="px-5 py-4 font-medium">Дата</th>
-                  <th className="px-5 py-4 font-medium">Payment</th>
+                  <th className="px-5 py-4 font-medium">Платеж</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,14 +168,14 @@ export default async function AdminOrdersPage({
                     </td>
                     <td className="px-5 py-4">
                       <Badge variant={order.status === OrderStatus.PAID ? "primary" : "subtle"}>
-                        {order.status}
+                        {orderStatusLabel[order.status]}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-black/52">
                       {format(order.createdAt, "d MMM yyyy, HH:mm", { locale: ru })}
                     </td>
                     <td className="px-5 py-4">
-                      <p className="text-black">{order.paymentProvider ?? "manual"}</p>
+                      <p className="text-black">{order.paymentProvider ?? "вручную"}</p>
                       <p className="max-w-[180px] truncate text-black/44">
                         {order.paymentId ?? order.id}
                       </p>
@@ -193,7 +199,7 @@ export default async function AdminOrdersPage({
       <PremiumCard padding="lg" className="rounded-[2rem] bg-[#f8f8f8]">
         <ReceiptText className="size-5 text-[#3d3bff]" />
         <p className="mt-3 text-sm text-black/52">
-          Сейчас покупки идут через mock checkout, но структура уже повторяет будущую платежную аналитику.
+          Сейчас покупки идут через демо-оплату, но структура уже повторяет будущую платежную аналитику.
         </p>
       </PremiumCard>
     </div>

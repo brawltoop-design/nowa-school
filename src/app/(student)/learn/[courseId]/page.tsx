@@ -147,7 +147,7 @@ export default async function LearnCoursePage({
               {typeof currentLesson.score === "number" ? (
                 <span className="inline-flex items-center gap-2 rounded-full bg-[#eef0ff] px-4 py-3 text-[#3d3bff]">
                   <Sparkles className="size-4" />
-                  Quiz score {currentLesson.score}%
+                  Балл теста {currentLesson.score}%
                 </span>
               ) : null}
             </div>
@@ -170,9 +170,9 @@ export default async function LearnCoursePage({
               className="rounded-[2.3rem] border-black/6 bg-white/94 shadow-[0_20px_60px_rgba(15,23,42,0.05)]"
             >
               <SectionHeader
-                eyebrow="Lesson content"
+                eyebrow="Материал урока"
                 title="Основной материал"
-                description="Текст урока собран как аккуратный premium reading block без ощущения старой LMS."
+                description="Текст урока собран как аккуратный блок для чтения без ощущения старой LMS."
               />
 
               <div className="mt-6 rounded-[2rem] border border-black/6 bg-[#fafbfd] px-6 py-6">
@@ -208,9 +208,9 @@ export default async function LearnCoursePage({
               <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
                 <div>
                   <SectionHeader
-                    eyebrow="Progress action"
+                    eyebrow="Завершение урока"
                     title="Закрой урок и двигайся дальше"
-                    description="После завершения урока обновим progressPercent, points, level и streak прямо в enrollment."
+                    description="После завершения урока обновим прогресс, очки, уровень и серию прямо в твоем доступе к курсу."
                   />
 
                   {course.earnedBadges.length ? (
@@ -339,7 +339,7 @@ export default async function LearnCoursePage({
             <Badge variant="subtle">{course.level}</Badge>
             <Badge variant="subtle">{course.language}</Badge>
             {viewer.isAdminPreview ? (
-              <Badge variant="primary">Admin preview</Badge>
+              <Badge variant="primary">Просмотр админом</Badge>
             ) : null}
           </div>
 
@@ -352,19 +352,19 @@ export default async function LearnCoursePage({
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
             <div className="rounded-[1.5rem] bg-[#f6f7fa] px-4 py-4">
-              <p className="text-xs text-black/42">Points</p>
+              <p className="text-xs text-black/42">Очки</p>
               <p className="mt-2 text-2xl font-semibold tracking-tight text-black">
                 {enrollment.points}
               </p>
             </div>
             <div className="rounded-[1.5rem] bg-[#f6f7fa] px-4 py-4">
-              <p className="text-xs text-black/42">Level</p>
+              <p className="text-xs text-black/42">Уровень</p>
               <p className="mt-2 text-2xl font-semibold tracking-tight text-black">
                 {enrollment.level}
               </p>
             </div>
             <div className="rounded-[1.5rem] bg-[#f6f7fa] px-4 py-4">
-              <p className="text-xs text-black/42">Streak</p>
+              <p className="text-xs text-black/42">Серия</p>
               <p className="mt-2 text-2xl font-semibold tracking-tight text-black">
                 {enrollment.streakDays}
               </p>
@@ -422,7 +422,7 @@ export default async function LearnCoursePage({
                             {formatDurationMinutes(lesson.durationMinutes)}
                           </span>
                           {typeof lesson.score === "number" ? (
-                            <span>Score {lesson.score}%</span>
+                            <span>Балл {lesson.score}%</span>
                           ) : null}
                         </div>
                       </div>

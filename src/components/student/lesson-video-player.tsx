@@ -190,19 +190,19 @@ export function LessonVideoPlayer({
           {hasTranscript ? (
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm text-white/78">
               <FileText className="size-4 text-white" />
-              Transcript
+              Транскрипт
             </span>
           ) : null}
           {hasQuiz ? (
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm text-white/78">
               <Sparkles className="size-4 text-white" />
-              Quiz
+              Тест
             </span>
           ) : null}
           {hasAssignment ? (
             <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/8 px-4 py-2.5 text-sm text-white/78">
               <Sparkles className="size-4 text-white" />
-              Assignment
+              Задание
             </span>
           ) : null}
         </div>

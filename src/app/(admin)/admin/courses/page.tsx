@@ -31,6 +31,48 @@ function getStatusBadgeVariant(status: CourseStatus) {
   return status === CourseStatus.PUBLISHED ? "primary" : "subtle";
 }
 
+function getCourseStatusLabel(status: CourseStatus) {
+  switch (status) {
+    case CourseStatus.PUBLISHED:
+      return "Опубликован";
+    case CourseStatus.BLOCKED:
+      return "Заблокирован";
+    case CourseStatus.DRAFT:
+    default:
+      return "Черновик";
+  }
+}
+
+function getSalesPageStatusLabel(status: string | null) {
+  switch (status) {
+    case "PUBLISHED":
+      return "Опубликована";
+    case "APPROVED":
+      return "Одобрена";
+    case "IN_REVIEW":
+      return "На проверке";
+    case "REJECTED":
+      return "Отклонена";
+    case "DRAFT":
+      return "Черновик";
+    default:
+      return "Нет";
+  }
+}
+
+function getModerationStatusLabel(status: string | null) {
+  switch (status) {
+    case "APPROVED":
+      return "Одобрено";
+    case "REJECTED":
+      return "Отклонено";
+    case "PENDING":
+      return "Ожидает";
+    default:
+      return "Нет";
+  }
+}
+
 const actionButtonClass =
   "inline-flex h-9 items-center justify-center rounded-full border border-black/8 bg-white px-3 text-xs font-medium text-black/66 transition duration-200 hover:border-black/14 hover:bg-[#f6f6f6] disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -52,9 +94,9 @@ export default async function AdminCoursesPage({
       />
 
       <SectionHeader
-        eyebrow="Course moderation"
+        eyebrow="Модерация курсов"
         title="Курсы платформы"
-        description="Публикация, блокировка и возврат в draft без тяжелой CMS-обвязки."
+        description="Публикация, блокировка и возврат в черновик без тяжелой CMS-обвязки."
       />
 
       <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/92">
@@ -75,9 +117,9 @@ export default async function AdminCoursesPage({
             className="h-[52px] rounded-full border border-black/10 bg-[#f8f8f8] px-5 text-sm text-black outline-none transition duration-200 focus:border-[#3d3bff]/40 focus:bg-white"
           >
             <option value="ALL">Все статусы</option>
-            <option value={CourseStatus.DRAFT}>Draft</option>
-            <option value={CourseStatus.PUBLISHED}>Published</option>
-            <option value={CourseStatus.BLOCKED}>Blocked</option>
+            <option value={CourseStatus.DRAFT}>Черновик</option>
+            <option value={CourseStatus.PUBLISHED}>Опубликован</option>
+            <option value={CourseStatus.BLOCKED}>Заблокирован</option>
           </select>
 
           <button className="h-[52px] rounded-full bg-[#3d3bff] px-6 text-sm font-medium text-white transition duration-200 hover:bg-[#2f2de8]">
@@ -94,7 +136,7 @@ export default async function AdminCoursesPage({
               {courses.length}
             </p>
           </div>
-          <Badge variant="subtle">Admin actions</Badge>
+          <Badge variant="subtle">Действия админа</Badge>
         </div>
 
         {courses.length ? (
@@ -104,14 +146,14 @@ export default async function AdminCoursesPage({
                 <tr>
                   <th className="px-5 py-4 font-medium">Курс</th>
                   <th className="px-5 py-4 font-medium">Автор</th>
-                  <th className="px-5 py-4 font-medium">Course</th>
-                  <th className="px-5 py-4 font-medium">Sales page</th>
-                  <th className="px-5 py-4 font-medium">Moderation</th>
+                  <th className="px-5 py-4 font-medium">Статус курса</th>
+                  <th className="px-5 py-4 font-medium">Продающая страница</th>
+                  <th className="px-5 py-4 font-medium">Модерация</th>
                   <th className="px-5 py-4 font-medium">Цена</th>
                   <th className="px-5 py-4 font-medium">Создан</th>
-                  <th className="px-5 py-4 font-medium">Views</th>
+                  <th className="px-5 py-4 font-medium">Просмотры</th>
                   <th className="px-5 py-4 font-medium">Продажи</th>
-                  <th className="px-5 py-4 font-medium">Revenue</th>
+                  <th className="px-5 py-4 font-medium">Выручка</th>
                   <th className="px-5 py-4 font-medium">Действия</th>
                 </tr>
               </thead>
@@ -131,17 +173,17 @@ export default async function AdminCoursesPage({
                     </td>
                     <td className="px-5 py-4">
                       <Badge variant={getStatusBadgeVariant(course.status)}>
-                        {course.status}
+                        {getCourseStatusLabel(course.status)}
                       </Badge>
                     </td>
                     <td className="px-5 py-4">
                       <Badge variant={course.salesPageStatus === "PUBLISHED" ? "primary" : "subtle"}>
-                        {course.salesPageStatus ?? "NONE"}
+                        {getSalesPageStatusLabel(course.salesPageStatus)}
                       </Badge>
                     </td>
                     <td className="px-5 py-4">
                       <Badge variant={course.moderationStatus === "APPROVED" ? "primary" : "subtle"}>
-                        {course.moderationStatus ?? "NONE"}
+                        {getModerationStatusLabel(course.moderationStatus)}
                       </Badge>
                     </td>
                     <td className="px-5 py-4 font-medium text-black">
@@ -168,7 +210,7 @@ export default async function AdminCoursesPage({
                             className={actionButtonClass}
                             disabled={course.status === CourseStatus.PUBLISHED}
                           >
-                            Publish
+                            Опубликовать
                           </button>
                         </form>
                         <form
@@ -182,7 +224,7 @@ export default async function AdminCoursesPage({
                             className={actionButtonClass}
                             disabled={course.status === CourseStatus.BLOCKED}
                           >
-                            Block
+                            Заблокировать
                           </button>
                         </form>
                         <form
@@ -196,7 +238,7 @@ export default async function AdminCoursesPage({
                             className={actionButtonClass}
                             disabled={course.status === CourseStatus.DRAFT}
                           >
-                            Draft
+                            В черновик
                           </button>
                         </form>
                         <Link
@@ -219,7 +261,7 @@ export default async function AdminCoursesPage({
                             className={actionButtonClass}
                           >
                             <ShieldAlert className="mr-1.5 size-3.5" />
-                            Review
+                            Проверка
                           </Link>
                         ) : null}
                       </div>
@@ -243,11 +285,11 @@ export default async function AdminCoursesPage({
       <div className="grid gap-4 md:grid-cols-2">
         <PremiumCard padding="lg" className="rounded-[2rem] bg-[#f8f8f8]">
           <BookOpen className="size-5 text-[#3d3bff]" />
-          <p className="mt-3 text-sm text-black/52">Published курсы попадают в публичный каталог.</p>
+          <p className="mt-3 text-sm text-black/52">Опубликованные курсы попадают в публичный каталог.</p>
         </PremiumCard>
         <PremiumCard padding="lg" className="rounded-[2rem] bg-[#f8f8f8]">
           <ShieldAlert className="size-5 text-[#3d3bff]" />
-          <p className="mt-3 text-sm text-black/52">Blocked курсы скрываются с витрины и остаются в админском контроле.</p>
+          <p className="mt-3 text-sm text-black/52">Заблокированные курсы скрываются с витрины и остаются под контролем админки.</p>
         </PremiumCard>
       </div>
     </div>

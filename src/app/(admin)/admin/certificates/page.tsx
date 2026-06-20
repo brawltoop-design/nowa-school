@@ -44,9 +44,9 @@ export default async function AdminCertificatesPage() {
       />
 
       <SectionHeader
-        eyebrow="Certificates"
-        title="nowa school Verified Skills registry"
-        description="Все certificates, статусы, публичные verification pages и действия revoke/restore."
+        eyebrow="Сертификаты"
+        title="Реестр подтвержденных навыков nowa school"
+        description="Все сертификаты, статусы, публичные страницы верификации и действия по отзыву и восстановлению."
       />
 
       <div className="grid gap-5 md:grid-cols-4">
@@ -54,23 +54,23 @@ export default async function AdminCertificatesPage() {
           icon={Award}
           label="Всего"
           value={String(certificates.length)}
-          description="records в registry"
+          description="записей в реестре"
         />
         <StatCard
           icon={ShieldCheck}
-          label="Issued"
+          label="Выданы"
           value={String(issued)}
-          description="активные credentials"
+          description="активные сертификаты"
         />
         <StatCard
           icon={RotateCcw}
-          label="Pending"
+          label="Ожидают"
           value={String(pending)}
           description="ждут проверки"
         />
         <StatCard
           icon={ShieldAlert}
-          label="Revoked"
+          label="Отозваны"
           value={String(revoked)}
           description="отозванные"
         />
@@ -81,13 +81,13 @@ export default async function AdminCertificatesPage() {
           <table className="w-full min-w-[980px] text-left">
             <thead className="bg-[#f4f4f4] text-xs text-black/44">
               <tr>
-                <th className="px-5 py-4 font-medium">Certificate</th>
-                <th className="px-5 py-4 font-medium">Student</th>
-                <th className="px-5 py-4 font-medium">Course</th>
-                <th className="px-5 py-4 font-medium">Score</th>
-                <th className="px-5 py-4 font-medium">Status</th>
-                <th className="px-5 py-4 font-medium">Issued</th>
-                <th className="px-5 py-4 font-medium">Actions</th>
+                <th className="px-5 py-4 font-medium">Сертификат</th>
+                <th className="px-5 py-4 font-medium">Ученик</th>
+                <th className="px-5 py-4 font-medium">Курс</th>
+                <th className="px-5 py-4 font-medium">Оценка</th>
+                <th className="px-5 py-4 font-medium">Статус</th>
+                <th className="px-5 py-4 font-medium">Выдан</th>
+                <th className="px-5 py-4 font-medium">Действия</th>
               </tr>
             </thead>
             <tbody>
@@ -133,7 +133,7 @@ export default async function AdminCertificatesPage() {
                     <div className="flex flex-wrap gap-2">
                       <PremiumButton asChild tone="secondary" className="h-10 px-4">
                         <Link href={`/cert/${certificate.certificateId}`}>
-                          Verify
+                          Открыть
                           <ArrowUpRight className="ml-2 size-4" />
                         </Link>
                       </PremiumButton>
@@ -146,7 +146,7 @@ export default async function AdminCertificatesPage() {
                           )}
                         >
                           <PremiumButton type="submit" className="h-10 px-4">
-                            Restore
+                            Восстановить
                           </PremiumButton>
                         </form>
                       ) : (
@@ -162,7 +162,7 @@ export default async function AdminCertificatesPage() {
                             tone="secondary"
                             className="h-10 px-4"
                           >
-                            Revoke
+                            Отозвать
                           </PremiumButton>
                         </form>
                       )}

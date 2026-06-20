@@ -23,9 +23,9 @@ export type DashboardNavItem = {
 
 export const publicNavigation: PublicNavItem[] = [
   { title: "Гайды", href: "/guides" },
-  { title: "Starter kit", href: "/free" },
-  { title: "Telegram", href: "/telegram" },
-  { title: "Bootcamp", href: "/bootcamp" },
+  { title: "Стартовый набор", href: "/free" },
+  { title: "Телеграм", href: "/telegram" },
+  { title: "Буткемп", href: "/bootcamp" },
   { title: "Авторам", href: "/authors" },
   { title: "Цены", href: "/pricing" },
 ];
@@ -44,7 +44,7 @@ export const dashboardNavigation = {
   admin: [
     { title: "Обзор", href: "/admin", icon: "layout-dashboard" },
     { title: "Курсы", href: "/admin/courses", icon: "book-open" },
-    { title: "Moderation", href: "/admin/moderation", icon: "shield-check" },
+    { title: "Модерация", href: "/admin/moderation", icon: "shield-check" },
     { title: "Пользователи", href: "/admin/users", icon: "users" },
     { title: "Заказы", href: "/admin/orders", icon: "receipt" },
     { title: "Сертификаты", href: "/admin/certificates", icon: "award" },

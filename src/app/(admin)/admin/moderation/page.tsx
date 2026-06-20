@@ -20,9 +20,9 @@ export default async function AdminModerationPage() {
       />
 
       <SectionHeader
-        eyebrow="Moderation queue"
-        title="Sales page moderation"
-        description="Очередь страниц, которые ждут review перед публикацией в каталог."
+        eyebrow="Очередь модерации"
+        title="Модерация продающих страниц"
+        description="Очередь страниц, которые ждут проверки перед публикацией в каталог."
       />
 
       <PremiumCard padding="lg" className="rounded-[2.3rem] bg-white/92">
@@ -33,9 +33,9 @@ export default async function AdminModerationPage() {
                 <tr>
                   <th className="px-5 py-4 font-medium">Курс</th>
                   <th className="px-5 py-4 font-medium">Автор</th>
-                  <th className="px-5 py-4 font-medium">Page status</th>
-                  <th className="px-5 py-4 font-medium">Submission</th>
-                  <th className="px-5 py-4 font-medium">Issues</th>
+                  <th className="px-5 py-4 font-medium">Статус страницы</th>
+                  <th className="px-5 py-4 font-medium">Отправка</th>
+                  <th className="px-5 py-4 font-medium">Замечания</th>
                   <th className="px-5 py-4 font-medium">Действие</th>
                 </tr>
               </thead>
@@ -61,14 +61,14 @@ export default async function AdminModerationPage() {
                       </Badge>
                     </td>
                     <td className="px-5 py-4 text-black/62">
-                      {item.issuesCount} issues / {item.highSeverityIssuesCount} high
+                      {item.issuesCount} замечаний / {item.highSeverityIssuesCount} критичных
                     </td>
                     <td className="px-5 py-4">
                       <Link
                         href={`/admin/moderation/sales-pages/${item.salesPageId}`}
                         className="inline-flex rounded-full border border-black/8 bg-white px-4 py-2 text-sm font-medium text-black/66 transition duration-200 hover:border-black/14 hover:bg-[#f7f7f7]"
                       >
-                        Open review
+                        Открыть проверку
                       </Link>
                     </td>
                   </tr>

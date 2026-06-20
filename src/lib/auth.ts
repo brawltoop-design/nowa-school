@@ -5,9 +5,9 @@ export const roleHomeMap = {
 } as const;
 
 export const roleLabelMap = {
-  STUDENT: "Student",
-  AUTHOR: "Author",
-  ADMIN: "Admin",
+  STUDENT: "Ученик",
+  AUTHOR: "Автор",
+  ADMIN: "Администратор",
 } as const;
 
 export function getRoleHome(role: keyof typeof roleHomeMap) {

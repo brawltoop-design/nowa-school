@@ -11,7 +11,7 @@ import { guides } from "@/lib/marketing";
 export const metadata: Metadata = {
   title: "Каталог гайдов nowa school",
   description:
-    "Мини-гайды по вайбкодингу, AI-агентам, лендингам, MVP SaaS и AI-автоматизациям с готовыми prompts и репозиториями.",
+    "Мини-гайды по вайбкодингу, AI-агентам, лендингам, MVP SaaS и AI-автоматизациям с готовыми промтами и репозиториями.",
 };
 
 type GuidesPageProps = {
@@ -46,7 +46,7 @@ export default async function GuidesPage({ searchParams }: GuidesPageProps) {
       <div className="app-shell space-y-8">
         <AnimatedSection className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <Badge variant="primary">Guides catalog</Badge>
+            <Badge variant="primary">Каталог гайдов</Badge>
             <h1 className="mt-5 max-w-5xl text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl">
               Мини-гайды, которые ведут к готовому AI-продукту
             </h1>
@@ -60,7 +60,7 @@ export default async function GuidesPage({ searchParams }: GuidesPageProps) {
               href="/free"
               className="inline-flex h-12 items-center rounded-full bg-black px-5 text-sm font-medium text-white transition duration-200 hover:bg-[#3d3bff]"
             >
-              Забрать starter kit
+              Забрать стартовый набор
               <ArrowUpRight className="ml-2 size-4" />
             </Link>
           </div>
@@ -131,7 +131,7 @@ export default async function GuidesPage({ searchParams }: GuidesPageProps) {
               По этим фильтрам гайдов пока нет
             </h2>
             <p className="mt-3 text-sm leading-7 text-black/56">
-              Сбрось поиск или начни со starter kit — там есть универсальные prompts
+              Сбрось поиск или начни со стартового набора — там есть универсальные промты
               для первого AI-продукта.
             </p>
           </PremiumCard>
@@ -141,13 +141,13 @@ export default async function GuidesPage({ searchParams }: GuidesPageProps) {
           <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
             <div>
               <Badge variant="subtle" className="bg-white/10 text-white/72">
-                Free first step
+                Первый бесплатный шаг
               </Badge>
               <h2 className="mt-5 text-3xl font-semibold tracking-tight">
-                Не знаешь, с чего начать? Забери starter kit
+                Не знаешь, с чего начать? Забери стартовый набор
               </h2>
               <p className="mt-3 text-sm leading-7 text-white/62">
-                30 prompts, 5 идей AI-агентов и шаблон первого лендинга помогут
+                30 промтов, 5 идей AI-агентов и шаблон первого лендинга помогут
                 выбрать первый понятный проект.
               </p>
             </div>

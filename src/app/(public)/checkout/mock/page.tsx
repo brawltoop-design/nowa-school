@@ -82,7 +82,7 @@ export default async function MockCheckoutPage({
 
           <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
             <div>
-              <Badge variant="primary">Secure mock checkout</Badge>
+              <Badge variant="primary">Безопасная демо-оплата</Badge>
               <h1 className="mt-5 text-[clamp(2.5rem,5vw,4.6rem)] font-semibold leading-[0.96] tracking-tight text-black">
                 {course.viewer.isEnrolled
                   ? "Доступ уже открыт"
@@ -91,13 +91,13 @@ export default async function MockCheckoutPage({
               <p className="mt-4 max-w-2xl text-lg leading-8 text-black/58">
                 {course.viewer.isEnrolled
                   ? "Повторная покупка не создается. Курс уже в твоем кабинете, можно сразу продолжать обучение."
-                  : "Сейчас это локальный premium checkout без реального платежного шлюза. Мы создадим order, enrollment и сразу откроем обучение."}
+                  : "Сейчас это локальная демо-оплата без реального платежного шлюза. Мы создадим заказ, доступ к курсу и сразу откроем обучение."}
               </p>
 
               <div className="mt-8 space-y-3">
                 {[
-                  "Order создается со статусом PAID",
-                  "Enrollment открывает курс сразу после подтверждения",
+                  "Заказ создается со статусом PAID",
+                  "Доступ к курсу открывается сразу после подтверждения",
                   "Комиссия платформы и доход автора считаются автоматически",
                 ].map((item) => (
                   <div
@@ -180,7 +180,7 @@ export default async function MockCheckoutPage({
                     <span>{formatCurrency(authorRevenue, course.currency)}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
-                    <span>AI-enhanced</span>
+                    <span>AI-усилен</span>
                     <span>{course.aiEnhanced ? "Да" : "Нет"}</span>
                   </div>
                   <div className="flex items-center justify-between gap-3">
@@ -209,7 +209,7 @@ export default async function MockCheckoutPage({
                     <p className="mt-2 text-lg font-medium leading-7 text-white">
                       {course.viewer.isEnrolled
                         ? "Покупка уже есть, поэтому второй order не появится."
-                        : "После подтверждения мы сразу откроем курс в learner-кабинете."}
+                        : "После подтверждения мы сразу откроем курс в кабинете ученика."}
                     </p>
                   </div>
                 </div>

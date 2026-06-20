@@ -21,7 +21,7 @@ export const certificateSubmissionSchema = z.object({
 
 export const certificateReviewSchema = z.object({
   score: z.coerce.number().int().min(0).max(100),
-  feedback: z.string().trim().min(10, "Feedback должен быть полезным."),
+  feedback: z.string().trim().min(10, "Обратная связь должна быть полезной."),
 });
 
 export type CertificateSubmissionInput = z.infer<

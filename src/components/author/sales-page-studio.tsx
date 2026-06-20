@@ -1,17 +1,23 @@
 "use client";
 
-import { startTransition, useMemo, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
+  ArrowDown,
+  ArrowUp,
   AlertTriangle,
   Bot,
+  Boxes,
   CheckCircle2,
+  Copy,
   Eye,
   FileWarning,
+  ImagePlus,
   Laptop2,
   LoaderCircle,
   MonitorSmartphone,
   Plus,
+  Search,
   Send,
   ShieldCheck,
   Sparkles,
@@ -37,17 +43,34 @@ import {
   submitSalesPageForModeration,
   toggleSalesPageBlockVisibility,
   unpublishSalesPage,
+  insertSalesPageSectionKit,
+  moveSalesPageSection,
+  duplicateSalesPageSection,
+  deleteSalesPageSection,
+  replaceSalesPageBlockType,
   updateSalesPageBlock,
   deleteSalesPageBlock,
   duplicateSalesPageBlock,
+  reorderSalesPageBlocks,
 } from "@/server/sales-page/actions";
 import type {
   CourseStudioData,
   SalesPageAnalyticsSummary,
 } from "@/server/sales-page/queries";
 import {
+  coerceSalesPageBlockSettings,
+  coerceSalesPageSectionSettings,
+  getDefaultSalesPageTheme,
+  getAutoSalesPageSectionSettings,
+  getSalesPageBlockDisplayTitle,
+  getSalesPageBlockLabel,
+  hexToRgba,
+  localizeSalesPageText,
+  salesPageBlockStylePresets,
   salesPageBlockCatalog,
+  salesPageIconCatalog,
   salesPageStatusMeta,
+  salesPageThemePresets,
   salesPageTemplateOptions,
   type SalesPageBlockItem,
   type SalesPageBlockContent,
@@ -55,7 +78,10 @@ import {
   type SalesPageDeviceMode,
   type SalesPageDraft,
   type SalesPageFaqItem,
+  type SalesPageBlockSettings,
 } from "@/lib/sales-page";
+import { createMockUploadUrl } from "@/lib/lesson-materials";
+import { slugifyCourseTitle } from "@/lib/validators/course";
 import type { SalesPageSuggestion } from "@/lib/ai-sales-page";
 
 type SalesPageStudioProps = {
@@ -65,19 +91,119 @@ type SalesPageStudioProps = {
   moderation: CourseStudioData["moderation"];
 };
 
+const salesPageBlockGroups: Array<{
+  title: string;
+  key: "acquisition" | "trust" | "program";
+  description: string;
+  items: SalesPageBlockDraft["type"][];
+}> = [
+  {
+    title: "Привлечение",
+    key: "acquisition",
+    description: "Первый экран, offer, price и конверсия.",
+    items: ["HERO", "OUTCOMES", "PRICING", "CTA", "COMPARISON"],
+  },
+  {
+    title: "Доверие",
+    key: "trust",
+    description: "Доверие, социальные доказательства и верификация.",
+    items: ["AUTHOR", "TESTIMONIALS", "FAQ", "CERTIFICATE", "COMMUNITY"],
+  },
+  {
+    title: "Программа",
+    key: "program",
+    description: "Программа, experience и внутренности продукта.",
+    items: [
+      "CURRICULUM",
+      "WHO_IS_THIS_FOR",
+      "WHAT_YOU_WILL_BUILD",
+      "PROCESS",
+      "FEATURES",
+      "FILES_INCLUDED",
+      "BONUSES",
+      "ICON_GRID",
+      "IMAGE_TEXT",
+      "CUSTOM_TEXT",
+    ],
+  },
+];
+
+const salesPageMarketplaceKits = [
+  {
+    key: "launch",
+    title: "Стартовый набор",
+    description: "Первый экран, результат, цена и финальный призыв к действию для быстрой продающей страницы.",
+    items: ["HERO", "OUTCOMES", "PRICING", "CTA"] as SalesPageBlockDraft["type"][],
+    sectionStyle: "gradient" as const,
+  },
+  {
+    key: "trust-pack",
+    title: "Набор доверия",
+    description: "Автор, отзывы, FAQ и сертификат для усиления доверия.",
+    items: ["AUTHOR", "TESTIMONIALS", "FAQ", "CERTIFICATE"] as SalesPageBlockDraft["type"][],
+    sectionStyle: "glass" as const,
+  },
+  {
+    key: "program-pack",
+    title: "Набор программы",
+    description: "Программа, процесс, бонусы и материалы для раскрытия продукта.",
+    items: ["CURRICULUM", "PROCESS", "BONUSES", "FILES_INCLUDED"] as SalesPageBlockDraft["type"][],
+    sectionStyle: "soft" as const,
+  },
+  {
+    key: "proof-loop",
+    title: "Закрытие возражений",
+    description: "Сравнение, отзывы, FAQ и призыв к действию для финального дожима к покупке.",
+    items: ["COMPARISON", "TESTIMONIALS", "FAQ", "CTA"] as SalesPageBlockDraft["type"][],
+    sectionStyle: "outline" as const,
+  },
+  {
+    key: "visual-story",
+    title: "Визуальная история",
+    description: "Изображение с текстом, результат и сетка иконок для красивой продуктовой подачи.",
+    items: ["IMAGE_TEXT", "WHAT_YOU_WILL_BUILD", "ICON_GRID"] as SalesPageBlockDraft["type"][],
+    sectionStyle: "accent" as const,
+  },
+  {
+    key: "community-proof",
+    title: "Сообщество и доверие",
+    description: "Автор, сообщество и бонусы для страниц авторов и когортных продуктов.",
+    items: ["AUTHOR", "COMMUNITY", "BONUSES"] as SalesPageBlockDraft["type"][],
+    sectionStyle: "midnight" as const,
+  },
+] as const;
+
+type MarketplaceView = "all" | "acquisition" | "trust" | "program" | "kits";
+type MarketplaceKitKey = (typeof salesPageMarketplaceKits)[number]["key"];
+
+function reorderIds(list: string[], movingId: string, targetIndex: number) {
+  const next = [...list];
+  const fromIndex = next.findIndex((item) => item === movingId);
+
+  if (fromIndex === -1) {
+    return next;
+  }
+
+  const [moving] = next.splice(fromIndex, 1);
+  const safeIndex = Math.max(0, Math.min(targetIndex, next.length));
+  next.splice(safeIndex, 0, moving);
+
+  return next;
+}
+
 function toneFromStatus(status: SalesPageDraft["status"]) {
   return salesPageStatusMeta[status]?.tone ?? "subtle";
 }
 
 function textFieldNames(content: SalesPageBlockContent) {
   return [
-    ["headline", "Headline"],
-    ["subheadline", "Subheadline"],
-    ["body", "Body"],
-    ["primaryCtaText", "Primary CTA"],
-    ["secondaryCtaText", "Secondary CTA"],
-    ["coverImage", "Cover image"],
-    ["oldPrice", "Old price"],
+    ["headline", "Заголовок"],
+    ["subheadline", "Подзаголовок"],
+    ["body", "Описание"],
+    ["primaryCtaText", "Основная кнопка"],
+    ["secondaryCtaText", "Вторая кнопка"],
+    ["coverImage", "Обложка"],
+    ["oldPrice", "Старая цена"],
   ].filter(([key]) => key in content) as Array<[string, string]>;
 }
 
@@ -149,6 +275,27 @@ function StructuredItemsEditor({
           key={`item-${index}`}
           className="rounded-[1.4rem] border border-black/8 bg-[#fafbff] p-4"
         >
+          <input
+            id={`item-image-upload-${index}`}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+
+              if (file) {
+                onChange(
+                  items.map((entry, entryIndex) =>
+                    entryIndex === index
+                      ? { ...entry, image: createMockUploadUrl(file.name) }
+                      : entry,
+                  ),
+                );
+              }
+
+              event.currentTarget.value = "";
+            }}
+          />
           <div className="grid gap-3">
             <input
               value={String(item.title ?? "")}
@@ -161,7 +308,7 @@ function StructuredItemsEditor({
                   ),
                 )
               }
-              placeholder="Title"
+              placeholder="Название"
               className="premium-control h-11 bg-white"
             />
             <textarea
@@ -176,7 +323,7 @@ function StructuredItemsEditor({
                 )
               }
               rows={3}
-              placeholder="Description"
+              placeholder="Описание"
               className="premium-textarea min-h-[104px] bg-white"
             />
             <input
@@ -190,9 +337,76 @@ function StructuredItemsEditor({
                   ),
                 )
               }
-              placeholder="Icon key: sparkles, bot, shield..."
+              placeholder="Ключ иконки: sparkles, bot, shield..."
               className="premium-control h-11 bg-white"
             />
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+              <input
+                value={String(item.image ?? "")}
+                onChange={(event) =>
+                  onChange(
+                    items.map((entry, entryIndex) =>
+                      entryIndex === index
+                        ? { ...entry, image: event.target.value }
+                        : entry,
+                    ),
+                  )
+                }
+                placeholder="URL изображения или /uploads/demo-image.png"
+                className="premium-control h-11 bg-white"
+              />
+              <label
+                htmlFor={`item-image-upload-${index}`}
+                className="inline-flex h-11 cursor-pointer items-center justify-center rounded-full border border-black/8 bg-white px-4 text-sm font-medium text-black transition duration-200 hover:border-black/12 hover:bg-[#f7f8ff]"
+              >
+                <ImagePlus className="mr-2 size-4" />
+                Добавить изображение
+              </label>
+            </div>
+            {item.image ? (
+              <div className="overflow-hidden rounded-[1.2rem] border border-black/8 bg-white">
+                {String(item.image).startsWith("/uploads/") ? (
+                  <div className="flex h-36 items-center justify-center px-4 text-center text-sm text-black/46">
+                    Демо-изображение
+                  </div>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={String(item.image)}
+                    alt={String(item.title ?? `item-${index + 1}`)}
+                    className="h-36 w-full object-cover"
+                  />
+                )}
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              {salesPageIconCatalog.map((icon) => {
+                const active = String(item.icon ?? "") === icon.key;
+
+                return (
+                  <button
+                    key={`${index}-${icon.key}`}
+                    type="button"
+                    onClick={() =>
+                      onChange(
+                        items.map((entry, entryIndex) =>
+                          entryIndex === index
+                            ? { ...entry, icon: icon.key }
+                            : entry,
+                        ),
+                      )
+                    }
+                    className={`rounded-full border px-3 py-2 text-xs font-medium transition ${
+                      active
+                        ? "border-[#3d3bff]/30 bg-[#eef0ff] text-[#3d3bff]"
+                        : "border-black/8 bg-white text-black/56 hover:border-black/14 hover:text-black"
+                    }`}
+                  >
+                    {icon.label}
+                  </button>
+                );
+              })}
+            </div>
             <div className="flex justify-end">
               <PremiumButton
                 type="button"
@@ -200,7 +414,7 @@ function StructuredItemsEditor({
                 className="h-10 px-4"
                 onClick={() => onChange(items.filter((_, entryIndex) => entryIndex !== index))}
               >
-                Remove item
+                Удалить элемент
               </PremiumButton>
             </div>
           </div>
@@ -213,7 +427,7 @@ function StructuredItemsEditor({
         onClick={() => onChange([...items, { title: "", description: "", icon: "sparkles" }])}
       >
         <Plus className="mr-2 size-4" />
-        Add item
+        Добавить элемент
       </PremiumButton>
     </div>
   );
@@ -245,7 +459,7 @@ function FaqEditor({
                   ),
                 )
               }
-              placeholder="Question"
+              placeholder="Вопрос"
               className="premium-control h-11 bg-white"
             />
             <textarea
@@ -260,7 +474,7 @@ function FaqEditor({
                 )
               }
               rows={4}
-              placeholder="Answer"
+              placeholder="Ответ"
               className="premium-textarea min-h-[120px] bg-white"
             />
             <div className="flex justify-end">
@@ -270,7 +484,7 @@ function FaqEditor({
                 className="h-10 px-4"
                 onClick={() => onChange(items.filter((_, entryIndex) => entryIndex !== index))}
               >
-                Remove FAQ
+                Удалить вопрос
               </PremiumButton>
             </div>
           </div>
@@ -283,10 +497,601 @@ function FaqEditor({
         onClick={() => onChange([...items, { question: "", answer: "" }])}
       >
         <Plus className="mr-2 size-4" />
-        Add FAQ
+        Добавить вопрос
       </PremiumButton>
     </div>
   );
+}
+
+function LinksEditor({
+  items,
+  onChange,
+}: {
+  items: Array<{ label?: string; url?: string }>;
+  onChange: (items: Array<{ label: string; url: string }>) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div
+          key={`link-${index}`}
+          className="rounded-[1.4rem] border border-black/8 bg-[#fafbff] p-4"
+        >
+          <div className="grid gap-3">
+            <input
+              value={String(item.label ?? "")}
+              onChange={(event) =>
+                onChange(
+                  items.map((entry, entryIndex) =>
+                    entryIndex === index
+                      ? {
+                          label: event.target.value,
+                          url: String(entry.url ?? ""),
+                        }
+                      : {
+                          label: String(entry.label ?? ""),
+                          url: String(entry.url ?? ""),
+                        },
+                  ),
+                )
+              }
+              placeholder="Подпись ссылки"
+              className="premium-control h-11 bg-white"
+            />
+            <input
+              value={String(item.url ?? "")}
+              onChange={(event) =>
+                onChange(
+                  items.map((entry, entryIndex) =>
+                    entryIndex === index
+                      ? {
+                          label: String(entry.label ?? ""),
+                          url: event.target.value,
+                        }
+                      : {
+                          label: String(entry.label ?? ""),
+                          url: String(entry.url ?? ""),
+                        },
+                  ),
+                )
+              }
+              placeholder="https://..."
+              className="premium-control h-11 bg-white"
+            />
+            <div className="flex justify-end">
+              <PremiumButton
+                type="button"
+                tone="secondary"
+                className="h-10 px-4"
+                onClick={() => onChange(items.filter((_, entryIndex) => entryIndex !== index).map((entry) => ({ label: String(entry.label ?? ""), url: String(entry.url ?? "") })))}
+              >
+                Удалить ссылку
+              </PremiumButton>
+            </div>
+          </div>
+        </div>
+      ))}
+      <PremiumButton
+        type="button"
+        tone="secondary"
+        className="h-10 px-4"
+        onClick={() =>
+          onChange([...items.map((entry) => ({ label: String(entry.label ?? ""), url: String(entry.url ?? "") })), { label: "", url: "" }])
+        }
+      >
+        <Plus className="mr-2 size-4" />
+        Добавить ссылку
+      </PremiumButton>
+    </div>
+  );
+}
+
+function ComparisonEditor({
+  items,
+  onChange,
+}: {
+  items: Array<{
+    label?: string;
+    ordinaryCourse?: string;
+    nowaSchoolCourse?: string;
+  }>;
+  onChange: (
+    items: Array<{
+      label: string;
+      ordinaryCourse: string;
+      nowaSchoolCourse: string;
+    }>,
+  ) => void;
+}) {
+  return (
+    <div className="space-y-3">
+      {items.map((item, index) => (
+        <div
+          key={`comparison-${index}`}
+          className="rounded-[1.4rem] border border-black/8 bg-[#fafbff] p-4"
+        >
+          <div className="grid gap-3">
+            <input
+              value={String(item.label ?? "")}
+              onChange={(event) =>
+                onChange(
+                  items.map((entry, entryIndex) =>
+                    entryIndex === index
+                      ? {
+                          label: event.target.value,
+                          ordinaryCourse: String(entry.ordinaryCourse ?? ""),
+                          nowaSchoolCourse: String(entry.nowaSchoolCourse ?? ""),
+                        }
+                      : {
+                          label: String(entry.label ?? ""),
+                          ordinaryCourse: String(entry.ordinaryCourse ?? ""),
+                          nowaSchoolCourse: String(entry.nowaSchoolCourse ?? ""),
+                        },
+                  ),
+                )
+              }
+              placeholder="Критерий"
+              className="premium-control h-11 bg-white"
+            />
+            <textarea
+              value={String(item.ordinaryCourse ?? "")}
+              onChange={(event) =>
+                onChange(
+                  items.map((entry, entryIndex) =>
+                    entryIndex === index
+                      ? {
+                          label: String(entry.label ?? ""),
+                          ordinaryCourse: event.target.value,
+                          nowaSchoolCourse: String(entry.nowaSchoolCourse ?? ""),
+                        }
+                      : {
+                          label: String(entry.label ?? ""),
+                          ordinaryCourse: String(entry.ordinaryCourse ?? ""),
+                          nowaSchoolCourse: String(entry.nowaSchoolCourse ?? ""),
+                        },
+                  ),
+                )
+              }
+              rows={3}
+              placeholder="Обычный курс"
+              className="premium-textarea min-h-[92px] bg-white"
+            />
+            <textarea
+              value={String(item.nowaSchoolCourse ?? "")}
+              onChange={(event) =>
+                onChange(
+                  items.map((entry, entryIndex) =>
+                    entryIndex === index
+                      ? {
+                          label: String(entry.label ?? ""),
+                          ordinaryCourse: String(entry.ordinaryCourse ?? ""),
+                          nowaSchoolCourse: event.target.value,
+                        }
+                      : {
+                          label: String(entry.label ?? ""),
+                          ordinaryCourse: String(entry.ordinaryCourse ?? ""),
+                          nowaSchoolCourse: String(entry.nowaSchoolCourse ?? ""),
+                        },
+                  ),
+                )
+              }
+              rows={3}
+              placeholder="nowa school"
+              className="premium-textarea min-h-[92px] bg-white"
+            />
+            <div className="flex justify-end">
+              <PremiumButton
+                type="button"
+                tone="secondary"
+                className="h-10 px-4"
+                onClick={() => onChange(items.filter((_, entryIndex) => entryIndex !== index).map((entry) => ({ label: String(entry.label ?? ""), ordinaryCourse: String(entry.ordinaryCourse ?? ""), nowaSchoolCourse: String(entry.nowaSchoolCourse ?? "") })))}
+              >
+                Удалить строку
+              </PremiumButton>
+            </div>
+          </div>
+        </div>
+      ))}
+      <PremiumButton
+        type="button"
+        tone="secondary"
+        className="h-10 px-4"
+        onClick={() =>
+          onChange([
+            ...items.map((entry) => ({
+              label: String(entry.label ?? ""),
+              ordinaryCourse: String(entry.ordinaryCourse ?? ""),
+              nowaSchoolCourse: String(entry.nowaSchoolCourse ?? ""),
+            })),
+            { label: "", ordinaryCourse: "", nowaSchoolCourse: "" },
+          ])
+        }
+      >
+        <Plus className="mr-2 size-4" />
+        Добавить строку
+      </PremiumButton>
+    </div>
+  );
+}
+
+function ColorField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-sm font-medium text-black">{label}</label>
+      <div className="flex items-center gap-3 rounded-[1.2rem] border border-black/8 bg-white px-3 py-3">
+        <input
+          type="color"
+          value={value.startsWith("#") ? value : "#3d3bff"}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 w-12 rounded-lg border border-black/8 bg-transparent"
+        />
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="premium-control h-10 border-0 bg-transparent px-0 shadow-none"
+        />
+      </div>
+    </div>
+  );
+}
+
+function getResolvedSectionMeta(
+  block: SalesPageBlockDraft,
+  pageTheme: ReturnType<typeof getDefaultSalesPageTheme>,
+) {
+  return (
+    coerceSalesPageSectionSettings(block.settings, pageTheme) ??
+    getAutoSalesPageSectionSettings(block.type, pageTheme)
+  );
+}
+
+function getSectionRangeFromBlocks(
+  blocks: SalesPageBlockDraft[],
+  index: number,
+  pageTheme: ReturnType<typeof getDefaultSalesPageTheme>,
+) {
+  const section = getResolvedSectionMeta(blocks[index], pageTheme);
+
+  if (!section) {
+    return {
+      start: index,
+      end: index,
+      section: null,
+    };
+  }
+
+  let start = index;
+  let end = index;
+
+  while (start > 0) {
+    const previous = getResolvedSectionMeta(blocks[start - 1], pageTheme);
+
+    if (previous?.id !== section.id) {
+      break;
+    }
+
+    start -= 1;
+  }
+
+  while (end < blocks.length - 1) {
+    const next = getResolvedSectionMeta(blocks[end + 1], pageTheme);
+
+    if (next?.id !== section.id) {
+      break;
+    }
+
+    end += 1;
+  }
+
+  return {
+    start,
+    end,
+    section,
+  };
+}
+
+function UploadUrlField({
+  label,
+  value,
+  onChange,
+  placeholder = "https://... или /uploads/demo-image.png",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <div className="space-y-3 rounded-[1.4rem] border border-black/8 bg-[#fafbff] p-4">
+      <div className="flex items-center justify-between gap-3">
+        <label className="text-sm font-medium text-black">{label}</label>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+
+            if (file) {
+              onChange(createMockUploadUrl(file.name));
+            }
+
+            event.currentTarget.value = "";
+          }}
+        />
+        <PremiumButton
+          type="button"
+          tone="secondary"
+          className="h-10 px-4"
+          onClick={() => inputRef.current?.click()}
+        >
+          <ImagePlus className="mr-2 size-4" />
+          Демо-загрузка
+        </PremiumButton>
+      </div>
+
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="premium-control h-11 bg-white"
+      />
+
+      <div className="overflow-hidden rounded-[1.35rem] border border-black/8 bg-white">
+        {value ? (
+          value.startsWith("/uploads/") ? (
+            <div className="flex h-36 items-center justify-center bg-[radial-gradient(circle_at_top_right,rgba(61,59,255,0.12),transparent_32%),linear-gradient(135deg,#f8faff_0%,#eef1ff_100%)] px-6 text-center text-sm text-black/54">
+              Демо-изображение
+              <br />
+              {value}
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={value}
+              alt={label}
+              className="h-36 w-full object-cover"
+            />
+          )
+        ) : (
+          <div className="flex h-36 items-center justify-center bg-[radial-gradient(circle_at_top_right,rgba(61,59,255,0.12),transparent_32%),linear-gradient(135deg,#f8faff_0%,#eef1ff_100%)] text-sm text-black/42">
+            Добавь URL изображения или выбери mock upload
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ImageListEditor({
+  label,
+  values,
+  onChange,
+}: {
+  label: string;
+  values: string[];
+  onChange: (values: string[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <label className="text-sm font-medium text-black">{label}</label>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+
+            if (file) {
+              onChange([...values, createMockUploadUrl(file.name)]);
+            }
+
+            event.currentTarget.value = "";
+          }}
+        />
+        <div className="flex gap-2">
+          <PremiumButton
+            type="button"
+            tone="secondary"
+            className="h-10 px-4"
+            onClick={() => inputRef.current?.click()}
+          >
+            <ImagePlus className="mr-2 size-4" />
+            Загрузить изображение
+          </PremiumButton>
+          <PremiumButton
+            type="button"
+            tone="secondary"
+            className="h-10 px-4"
+            onClick={() => onChange([...values, ""])}
+          >
+            <Plus className="mr-2 size-4" />
+            Добавить URL
+          </PremiumButton>
+        </div>
+      </div>
+
+      {values.length ? (
+        <div className="grid gap-3">
+          {values.map((value, index) => (
+            <div
+              key={`${label}-${index}`}
+              className="rounded-[1.4rem] border border-black/8 bg-[#fafbff] p-4"
+            >
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px]">
+                <div className="space-y-3">
+                  <input
+                    value={value}
+                    onChange={(event) =>
+                      onChange(
+                        values.map((entry, entryIndex) =>
+                          entryIndex === index ? event.target.value : entry,
+                        ),
+                      )
+                    }
+                    placeholder="https://... или /uploads/demo-image.png"
+                    className="premium-control h-11 bg-white"
+                  />
+                  <div className="flex justify-end">
+                    <PremiumButton
+                      type="button"
+                      tone="secondary"
+                      className="h-10 px-4"
+                      onClick={() =>
+                        onChange(values.filter((_, entryIndex) => entryIndex !== index))
+                      }
+                    >
+                      Удалить изображение
+                    </PremiumButton>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-[1.1rem] border border-black/8 bg-white">
+                  {value ? (
+                    value.startsWith("/uploads/") ? (
+                      <div className="flex h-32 items-center justify-center px-4 text-center text-xs uppercase tracking-[0.18em] text-black/38">
+                        Демо-изображение
+                      </div>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={value}
+                        alt={`media-${index + 1}`}
+                        className="h-32 w-full object-cover"
+                      />
+                    )
+                  ) : (
+                    <div className="flex h-32 items-center justify-center text-xs uppercase tracking-[0.2em] text-black/32">
+                      Пусто
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <FeedbackCard message="Пока без изображений. Добавь URL или загрузи mock-изображение." />
+      )}
+    </div>
+  );
+}
+
+function normalizeLegacySalesPageDraft(
+  draft: SalesPageDraft | null,
+): SalesPageDraft | null {
+  if (!draft) {
+    return null;
+  }
+
+  return {
+    ...draft,
+    blocks: draft.blocks.map((block) => ({
+      ...block,
+      title: getSalesPageBlockDisplayTitle(block),
+      subtitle: localizeSalesPageText(block.subtitle),
+      settings:
+        block.settings && typeof block.settings === "object"
+          ? {
+              ...block.settings,
+              sectionLabel: localizeSalesPageText(
+                typeof block.settings.sectionLabel === "string"
+                  ? block.settings.sectionLabel
+                  : "",
+              ),
+            }
+          : block.settings,
+      content: {
+        ...block.content,
+        headline: localizeSalesPageText(
+          typeof block.content.headline === "string"
+            ? block.content.headline
+            : "",
+        ),
+        subheadline: localizeSalesPageText(
+          typeof block.content.subheadline === "string"
+            ? block.content.subheadline
+            : "",
+        ),
+        body: localizeSalesPageText(
+          typeof block.content.body === "string" ? block.content.body : "",
+        ),
+        primaryCtaText: localizeSalesPageText(
+          typeof block.content.primaryCtaText === "string"
+            ? block.content.primaryCtaText
+            : "",
+        ),
+        secondaryCtaText: localizeSalesPageText(
+          typeof block.content.secondaryCtaText === "string"
+            ? block.content.secondaryCtaText
+            : "",
+        ),
+        oldPrice: localizeSalesPageText(
+          typeof block.content.oldPrice === "string"
+            ? block.content.oldPrice
+            : "",
+        ),
+        badges: Array.isArray(block.content.badges)
+          ? block.content.badges.map((badge) =>
+              typeof badge === "string" ? localizeSalesPageText(badge) : badge,
+            )
+          : block.content.badges,
+        deliverables: Array.isArray(block.content.deliverables)
+          ? block.content.deliverables.map((item) =>
+              typeof item === "string" ? localizeSalesPageText(item) : item,
+            )
+          : block.content.deliverables,
+        included: Array.isArray(block.content.included)
+          ? block.content.included.map((item) =>
+              typeof item === "string" ? localizeSalesPageText(item) : item,
+            )
+          : block.content.included,
+        items: Array.isArray(block.content.items)
+          ? block.content.items.map((item) => ({
+              ...item,
+              title: localizeSalesPageText(item.title),
+              description: localizeSalesPageText(item.description),
+            }))
+          : block.content.items,
+        faqs: Array.isArray(block.content.faqs)
+          ? block.content.faqs.map((item) => ({
+              ...item,
+              question: localizeSalesPageText(item.question),
+              answer: localizeSalesPageText(item.answer),
+            }))
+          : block.content.faqs,
+        links: Array.isArray(block.content.links)
+          ? block.content.links.map((item) => ({
+              ...item,
+              label: localizeSalesPageText(item.label),
+            }))
+          : block.content.links,
+        comparisonItems: Array.isArray(block.content.comparisonItems)
+          ? block.content.comparisonItems.map((item) => ({
+              ...item,
+              label: localizeSalesPageText(item.label),
+              ordinaryCourse: localizeSalesPageText(item.ordinaryCourse),
+              nowaSchoolCourse: localizeSalesPageText(item.nowaSchoolCourse),
+            }))
+          : block.content.comparisonItems,
+      },
+    })),
+  };
 }
 
 export function SalesPageStudio({
@@ -297,12 +1102,16 @@ export function SalesPageStudio({
 }: SalesPageStudioProps) {
   const router = useRouter();
   const [deviceMode, setDeviceMode] = useState<SalesPageDeviceMode>("desktop");
-  const [page, setPage] = useState<SalesPageDraft | null>(salesPage);
+  const normalizedIncomingPage = useMemo(
+    () => normalizeLegacySalesPageDraft(salesPage),
+    [salesPage],
+  );
+  const [page, setPage] = useState<SalesPageDraft | null>(normalizedIncomingPage);
   const [savedSnapshot, setSavedSnapshot] = useState(
-    JSON.stringify(salesPage),
+    JSON.stringify(normalizedIncomingPage),
   );
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
-    salesPage?.blocks[0]?.id ?? null,
+    normalizedIncomingPage?.blocks[0]?.id ?? null,
   );
   const [selectedTemplate, setSelectedTemplate] = useState("practical-skill");
   const [newBlockType, setNewBlockType] = useState(
@@ -316,14 +1125,90 @@ export function SalesPageStudio({
   const [suggestions, setSuggestions] = useState<SalesPageSuggestion[]>([]);
   const [deleteTargetBlock, setDeleteTargetBlock] =
     useState<SalesPageBlockDraft | null>(null);
+  const [blockQuery, setBlockQuery] = useState("");
+  const deferredBlockQuery = useDeferredValue(blockQuery);
+  const [marketplaceView, setMarketplaceView] = useState<MarketplaceView>("all");
+  const [activeKitKey, setActiveKitKey] = useState<MarketplaceKitKey>(
+    salesPageMarketplaceKits[0]?.key ?? "launch",
+  );
+  const [draggingBlockId, setDraggingBlockId] = useState<string | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [deleteTargetSection, setDeleteTargetSection] = useState<{
+    blockId: string;
+    label: string;
+  } | null>(null);
+
+  useEffect(() => {
+    setPage(normalizedIncomingPage);
+    setSavedSnapshot(JSON.stringify(normalizedIncomingPage));
+    setSelectedBlockId((current) => {
+      if (
+        current &&
+        normalizedIncomingPage?.blocks.some((block) => block.id === current)
+      ) {
+        return current;
+      }
+
+      return normalizedIncomingPage?.blocks[0]?.id ?? null;
+    });
+  }, [normalizedIncomingPage]);
 
   const isDirty = useMemo(
     () => JSON.stringify(page) !== savedSnapshot,
     [page, savedSnapshot],
   );
 
+  const pageTheme = page?.theme ?? getDefaultSalesPageTheme();
+  const activeKit =
+    salesPageMarketplaceKits.find((kit) => kit.key === activeKitKey) ??
+    salesPageMarketplaceKits[0]!;
   const selectedBlock =
     page?.blocks.find((block) => block.id === selectedBlockId) ?? null;
+  const selectedBlockSettings = selectedBlock
+    ? coerceSalesPageBlockSettings(
+        selectedBlock.settings,
+        pageTheme,
+      )
+    : null;
+
+  const normalizedBlockQuery = deferredBlockQuery.trim().toLowerCase();
+  const visibleMarketplaceGroups = useMemo(() => {
+    return salesPageBlockGroups
+      .map((group) => ({
+        ...group,
+        blocks: group.items
+          .map((type) =>
+            salesPageBlockCatalog.find((item) => item.type === type),
+          )
+          .filter(
+            (
+              block,
+            ): block is (typeof salesPageBlockCatalog)[number] => Boolean(block),
+          )
+          .filter((block) => {
+            const matchesView =
+              marketplaceView === "all" ||
+              marketplaceView === group.key;
+            const haystack = `${block.title} ${block.description} ${block.type}`.toLowerCase();
+            const matchesQuery =
+              !normalizedBlockQuery || haystack.includes(normalizedBlockQuery);
+
+            return matchesView && matchesQuery;
+          }),
+      }))
+      .filter((group) => group.blocks.length > 0);
+  }, [marketplaceView, normalizedBlockQuery]);
+
+  const visibleMarketplaceKits = useMemo(() => {
+    return salesPageMarketplaceKits.filter((kit) => {
+      const matchesView = marketplaceView === "all" || marketplaceView === "kits";
+      const haystack = `${kit.title} ${kit.description} ${kit.items.join(" ")}`.toLowerCase();
+      const matchesQuery =
+        !normalizedBlockQuery || haystack.includes(normalizedBlockQuery);
+
+      return matchesView && matchesQuery;
+    });
+  }, [marketplaceView, normalizedBlockQuery]);
 
   const setSuccess = (message: string) =>
     setFeedback({ tone: "success", message });
@@ -354,6 +1239,25 @@ export function SalesPageStudio({
         [field]: value,
       },
     }));
+  };
+
+  const updateLocalBlockSettings = (
+    blockId: string,
+    updater: (settings: SalesPageBlockSettings) => SalesPageBlockSettings,
+  ) => {
+    updateLocalBlock(blockId, (block) => {
+      const nextSettings = updater(
+        coerceSalesPageBlockSettings(
+          block.settings,
+          page?.theme ?? getDefaultSalesPageTheme(),
+        ),
+      );
+
+      return {
+        ...block,
+        settings: nextSettings,
+      };
+    });
   };
 
   const handleSaveSelectedBlock = () => {
@@ -445,6 +1349,133 @@ export function SalesPageStudio({
     void runMutation("delete", async () => deleteSalesPageBlock(blockToDelete.id));
   };
 
+  const handleCreateBlock = (
+    type: SalesPageBlockDraft["type"],
+    afterBlockId?: string | null,
+  ) =>
+    runMutation(
+      afterBlockId ? `add-block-inline-${type}` : `add-block-${type}`,
+      async () => createSalesPageBlock(course.id, type, afterBlockId),
+    );
+
+  const handleCreateKit = (
+    kit: (typeof salesPageMarketplaceKits)[number],
+    options?: {
+      anchorBlockId?: string | null;
+      position?: "before" | "after";
+    },
+  ) =>
+    runMutation(
+      options?.anchorBlockId
+        ? `add-kit-inline-${kit.key}-${options.position ?? "after"}`
+        : `add-kit-${kit.key}`,
+      async () =>
+        insertSalesPageSectionKit(course.id, [...kit.items], {
+          anchorBlockId: options?.anchorBlockId,
+          position: options?.position ?? "after",
+          sectionLabel: kit.title,
+          sectionStyle: kit.sectionStyle,
+        }),
+    );
+
+  const handleOpenDeleteSection = (blockId: string) => {
+    if (!page) {
+      return;
+    }
+
+    const blockIndex = page.blocks.findIndex((block) => block.id === blockId);
+
+    if (blockIndex === -1) {
+      return;
+    }
+
+    const sectionRange = getSectionRangeFromBlocks(page.blocks, blockIndex, pageTheme);
+    const sectionLabel =
+      sectionRange.section?.label ||
+      page.blocks[sectionRange.start]?.title ||
+      "Секция";
+
+    setDeleteTargetSection({
+      blockId,
+      label: sectionLabel,
+    });
+  };
+
+  const handleConfirmDeleteSection = () => {
+    if (!deleteTargetSection) {
+      return;
+    }
+
+    const target = deleteTargetSection;
+    setDeleteTargetSection(null);
+    void runMutation("delete-section", async () =>
+      deleteSalesPageSection(target.blockId),
+    );
+  };
+
+  const persistBlockOrder = (orderedIds: string[]) => {
+    if (!page || pendingAction === "reorder") {
+      setDraggingBlockId(null);
+      setDropIndex(null);
+      return;
+    }
+
+    const previousPage = page;
+    const orderedBlocks = orderedIds
+      .map((id) => previousPage.blocks.find((block) => block.id === id))
+      .filter((block): block is SalesPageBlockDraft => Boolean(block))
+      .map((block, index) => ({
+        ...block,
+        order: index + 1,
+      }));
+
+    setPage({
+      ...previousPage,
+      blocks: orderedBlocks,
+    });
+    setDraggingBlockId(null);
+    setDropIndex(null);
+    setPendingAction("reorder");
+    setFeedback(null);
+
+    startTransition(async () => {
+      const result = await reorderSalesPageBlocks(course.id, orderedIds);
+
+      if (!result.success) {
+        setPage(previousPage);
+        setError(result.message);
+        setPendingAction(null);
+        return;
+      }
+
+      const nextPage = {
+        ...previousPage,
+        blocks: orderedBlocks,
+      };
+
+      setSuccess(result.message);
+      setSavedSnapshot(JSON.stringify(nextPage));
+      setPendingAction(null);
+      router.refresh();
+    });
+  };
+
+  const handleDropAtIndex = (targetIndex: number) => {
+    if (!page || !draggingBlockId) {
+      setDraggingBlockId(null);
+      setDropIndex(null);
+      return;
+    }
+
+    const orderedIds = reorderIds(
+      page.blocks.map((block) => block.id),
+      draggingBlockId,
+      targetIndex,
+    );
+
+    persistBlockOrder(orderedIds);
+  };
+
   return (
     <div className="space-y-6">
       <ConfirmDialog
@@ -457,12 +1488,29 @@ export function SalesPageStudio({
         title="Удалить блок?"
         description={
           deleteTargetBlock
-            ? `Блок "${deleteTargetBlock.title ?? deleteTargetBlock.type}" исчезнет из sales page и live preview.`
-            : "Блок будет удален из sales page."
+            ? `Блок "${getSalesPageBlockDisplayTitle(deleteTargetBlock)}" исчезнет из продающей страницы и предпросмотра.`
+            : "Блок будет удален из продающей страницы."
         }
         confirmLabel="Удалить блок"
         pending={pendingAction === "delete"}
         onConfirm={handleConfirmDeleteBlock}
+      />
+      <ConfirmDialog
+        open={Boolean(deleteTargetSection)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTargetSection(null);
+          }
+        }}
+        title="Удалить секцию?"
+        description={
+          deleteTargetSection
+            ? `Секция "${deleteTargetSection.label}" будет удалена целиком вместе со всеми вложенными блоками.`
+            : "Секция будет удалена целиком."
+        }
+        confirmLabel="Удалить секцию"
+        pending={pendingAction === "delete-section"}
+        onConfirm={handleConfirmDeleteSection}
       />
 
       <PremiumCard
@@ -472,19 +1520,20 @@ export function SalesPageStudio({
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="primary">Sales Page Builder</Badge>
+              <Badge variant="primary">Конструктор сайта курса</Badge>
               <Badge variant={page ? toneFromStatus(page.status) : "subtle"}>
-                {page ? salesPageStatusMeta[page.status].label : "No page yet"}
+                {page ? salesPageStatusMeta[page.status].label : "Страница еще не создана"}
               </Badge>
-              <Badge variant="subtle">{isDirty ? "Unsaved" : "Saved"}</Badge>
+              <Badge variant="subtle">{isDirty ? "Не сохранено" : "Сохранено"}</Badge>
             </div>
             <div>
               <h2 className="text-3xl font-semibold tracking-tight text-black sm:text-4xl">
-                Course sales page studio
+                Конструктор продающей страницы
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-black/56">
-                Собирай мини-сайт курса: оффер, программа, proof points, FAQ,
-                цена, CTA и live preview без старой CMS-структуры.
+                Собирай публичный мини-сайт курса блоками: оффер, программа,
+                доказательства доверия, FAQ, цена, призыв к действию и живой
+                предпросмотр на холсте в логике отдельного конструктора сайтов.
               </p>
             </div>
           </div>
@@ -493,7 +1542,7 @@ export function SalesPageStudio({
             <PremiumButton asChild tone="secondary" className="h-11 px-4">
               <Link href={`/author/courses/${course.id}/preview/sales-page`}>
                 <Eye className="mr-2 size-4" />
-                Preview
+                Предпросмотр
               </Link>
             </PremiumButton>
 
@@ -508,7 +1557,7 @@ export function SalesPageStudio({
                 onClick={() => setDeviceMode("desktop")}
               >
                 <Laptop2 className="size-4" />
-                Desktop
+                Десктоп
               </button>
               <button
                 type="button"
@@ -520,7 +1569,7 @@ export function SalesPageStudio({
                 onClick={() => setDeviceMode("mobile")}
               >
                 <MonitorSmartphone className="size-4" />
-                Mobile
+                Мобильная
               </button>
             </div>
 
@@ -557,7 +1606,7 @@ export function SalesPageStudio({
               ) : (
                 <WandSparkles className="mr-2 size-4" />
               )}
-              AI Improve Page
+              AI-улучшение страницы
             </PremiumButton>
 
             <PremiumButton
@@ -575,7 +1624,7 @@ export function SalesPageStudio({
               ) : (
                 <Send className="mr-2 size-4" />
               )}
-              Submit for moderation
+              Отправить на модерацию
             </PremiumButton>
 
             <PremiumButton
@@ -592,7 +1641,7 @@ export function SalesPageStudio({
               ) : (
                 <ShieldCheck className="mr-2 size-4" />
               )}
-              Publish
+              Опубликовать
             </PremiumButton>
 
             <PremiumButton
@@ -604,7 +1653,7 @@ export function SalesPageStudio({
                 runMutation("unpublish", async () => unpublishSalesPage(course.id))
               }
             >
-              Unpublish
+              Снять с публикации
             </PremiumButton>
           </div>
         </div>
@@ -621,7 +1670,7 @@ export function SalesPageStudio({
             className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
           >
             <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-              Templates
+              Шаблоны
             </p>
             <div className="mt-4 space-y-3">
               <select
@@ -653,12 +1702,12 @@ export function SalesPageStudio({
                 ) : (
                   <Sparkles className="mr-2 size-4" />
                 )}
-                Apply template
+                Применить шаблон
               </PremiumButton>
             </div>
             <p className="mt-4 text-sm leading-7 text-black/52">
-              Если нужно, можно быстро перезаписать структуру страницы под skill,
-              creator или tech-сценарий.
+              Если нужно, можно быстро перезаписать структуру страницы под
+              практический, авторский или технический сценарий.
             </p>
           </PremiumCard>
 
@@ -669,77 +1718,408 @@ export function SalesPageStudio({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-                  Blocks
+                  Библиотека блоков
                 </p>
                 <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                  {page?.blocks.length ?? 0} blocks
+                  {page?.blocks.length ?? 0} блоков
                 </p>
               </div>
-              <Badge variant="subtle">{course.metrics.lessonCount} lessons</Badge>
+              <Badge variant="subtle">{course.metrics.lessonCount} уроков</Badge>
             </div>
 
-            <div className="mt-5 space-y-3">
-              <select
-                value={newBlockType}
-                onChange={(event) =>
-                  setNewBlockType(event.target.value as SalesPageBlockDraft["type"])
-                }
-                className="premium-select"
-              >
-                {salesPageBlockCatalog.map((block) => (
-                  <option key={block.type} value={block.type}>
-                    {block.title}
-                  </option>
-                ))}
-              </select>
+            <div className="mt-5 space-y-4">
+              <div className="rounded-[1.4rem] border border-black/8 bg-white px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <Search className="size-4 text-black/36" />
+                  <input
+                    value={blockQuery}
+                    onChange={(event) => setBlockQuery(event.target.value)}
+                    placeholder="Найти блок, секцию или набор"
+                    className="h-10 w-full bg-transparent text-sm text-black outline-none placeholder:text-black/34"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { key: "all", label: "Все" },
+                  { key: "acquisition", label: "Привлечение" },
+                  { key: "trust", label: "Доверие" },
+                  { key: "program", label: "Программа" },
+                  { key: "kits", label: "Секции" },
+                ].map((item) => {
+                  const active = marketplaceView === item.key;
+
+                  return (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setMarketplaceView(item.key as MarketplaceView)}
+                      className={`rounded-full border px-4 py-2 text-sm transition ${
+                        active
+                          ? "border-[#3d3bff]/30 bg-[#eef0ff] text-[#3d3bff]"
+                          : "border-black/8 bg-white text-black/56 hover:border-black/14 hover:text-black"
+                      }`}
+                    >
+                      {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[1.6rem] border border-black/6 bg-[#f7f8fc] p-4">
+              <p className="text-sm font-medium text-black">
+                Быстрая вставка:{" "}
+                {salesPageBlockCatalog.find((block) => block.type === newBlockType)
+                  ?.title ?? newBlockType}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-black/48">
+                {selectedBlock
+                  ? `Новый блок встанет сразу после "${selectedBlock.title ?? selectedBlock.type}".`
+                  : "Если блок не выбран, новый блок добавится в конец страницы."}
+              </p>
               <PremiumButton
                 type="button"
                 tone="secondary"
-                className="h-11 w-full"
-                disabled={pendingAction === "add-block"}
+                className="mt-4 h-11 w-full"
+                disabled={Boolean(pendingAction?.startsWith("add-block"))}
                 onClick={() =>
-                  runMutation("add-block", async () =>
-                    createSalesPageBlock(course.id, newBlockType),
-                  )
+                  handleCreateBlock(newBlockType, selectedBlockId)
                 }
               >
-                {pendingAction === "add-block" ? (
+                {pendingAction?.startsWith("add-block") ? (
                   <LoaderCircle className="mr-2 size-4 animate-spin" />
                 ) : (
                   <Plus className="mr-2 size-4" />
                 )}
-                Add block
+                {selectedBlock ? "Вставить после выбранного блока" : "Добавить блок на страницу"}
               </PremiumButton>
             </div>
 
+            <div className="mt-5 space-y-4">
+              {visibleMarketplaceKits.length ? (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-black">
+                      Готовые наборы секций
+                    </p>
+                    <p className="mt-1 text-sm leading-6 text-black/46">
+                      Быстрые наборы блоков для лендинга, блока доверия и раскрытия программы.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {visibleMarketplaceKits.map((kit) => (
+                      <div
+                        key={kit.key}
+                        className={`rounded-[1.35rem] border p-4 transition ${
+                          activeKitKey === kit.key
+                            ? "border-[#3d3bff]/28 bg-[#eef0ff]"
+                            : "border-black/6 bg-white"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-black">{kit.title}</p>
+                            <p className="mt-2 text-sm leading-6 text-black/48">
+                              {kit.description}
+                            </p>
+                          </div>
+                          <div className="flex size-10 items-center justify-center rounded-2xl bg-[#eef0ff] text-[#3d3bff]">
+                            <Boxes className="size-4" />
+                          </div>
+                        </div>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {kit.items.map((type) => (
+                            <Badge key={`${kit.key}-${type}`} variant="subtle">
+                              {salesPageBlockCatalog.find((item) => item.type === type)?.title ??
+                                type}
+                            </Badge>
+                          ))}
+                        </div>
+                        <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                          <PremiumButton
+                            type="button"
+                            tone={activeKitKey === kit.key ? "primary" : "secondary"}
+                            className="h-11 w-full"
+                            onClick={() => setActiveKitKey(kit.key)}
+                          >
+                            {activeKitKey === kit.key ? "Активный набор" : "Использовать на холсте"}
+                          </PremiumButton>
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-11 w-full"
+                            disabled={Boolean(pendingAction?.startsWith("add-kit"))}
+                            onClick={() =>
+                              handleCreateKit(kit, {
+                                anchorBlockId: selectedBlockId,
+                                position: "after",
+                              })
+                            }
+                          >
+                            <Plus className="mr-2 size-4" />
+                            {selectedBlock
+                              ? "Вставить после выбранного блока"
+                              : "Добавить набор секций"}
+                          </PremiumButton>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {visibleMarketplaceGroups.map((group) => (
+                <div key={group.title} className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium text-black">{group.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-black/46">
+                      {group.description}
+                    </p>
+                  </div>
+
+                  <div className="grid gap-3">
+                    {group.blocks.map((block) => {
+                      const active = newBlockType === block.type;
+
+                      return (
+                        <button
+                          key={block.type}
+                          type="button"
+                          onClick={() => setNewBlockType(block.type)}
+                          className={`rounded-[1.35rem] border px-4 py-4 text-left transition ${
+                            active
+                              ? "border-[#3d3bff]/30 bg-[#eef0ff]"
+                              : "border-black/6 bg-white hover:border-black/12 hover:bg-[#fafbff]"
+                          }`}
+                        >
+                          <p className="text-sm font-medium text-black">
+                            {block.title}
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-black/48">
+                            {block.description}
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+
+              {!visibleMarketplaceGroups.length && !visibleMarketplaceKits.length ? (
+                <FeedbackCard message="Ничего не найдено. Попробуй другой запрос или переключи фильтр." />
+              ) : null}
+            </div>
+
             <div className="mt-6 space-y-3">
-              {page?.blocks.map((block) => (
-                <button
-                  key={block.id}
-                  type="button"
-                  onClick={() => setSelectedBlockId(block.id)}
-                  className={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
-                    selectedBlockId === block.id
-                      ? "border-[#3d3bff]/28 bg-[#eef0ff]"
-                      : "border-black/6 bg-[#fafbff] hover:border-black/12"
-                  }`}
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-black">
-                        {block.title ?? block.type}
-                      </p>
-                      <p className="mt-1 text-xs uppercase tracking-[0.22em] text-black/34">
-                        {block.type}
-                      </p>
-                    </div>
-                    {block.isVisible ? (
-                      <Badge variant="subtle">Visible</Badge>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-black">Структура страницы</p>
+                <Badge variant="subtle">перетаскивание</Badge>
+              </div>
+
+              <div
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setDropIndex(0);
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleDropAtIndex(0);
+                }}
+                className={`h-3 rounded-full transition ${
+                  dropIndex === 0 ? "bg-[#3d3bff]/18 ring-2 ring-[#3d3bff]/22" : "bg-transparent"
+                }`}
+              />
+
+              {page?.blocks.map((block, index) => (
+                <div key={block.id} className="space-y-2">
+                  {(() => {
+                    const section = getResolvedSectionMeta(block, pageTheme);
+                    const sectionRange = getSectionRangeFromBlocks(
+                      page.blocks,
+                      index,
+                      pageTheme,
+                    );
+                    const startsSection = section && sectionRange.start === index;
+                    const sectionAnchorId =
+                      page.blocks[sectionRange.end]?.id ?? block.id;
+
+                    return (
+                  <div
+                    draggable
+                    onDragStart={() => {
+                      setDraggingBlockId(block.id);
+                      setDropIndex(index);
+                    }}
+                    onDragEnd={() => {
+                      setDraggingBlockId(null);
+                      setDropIndex(null);
+                    }}
+                    className={`w-full rounded-[1.4rem] border px-4 py-4 text-left transition ${
+                      selectedBlockId === block.id
+                        ? "border-[#3d3bff]/28 bg-[#eef0ff]"
+                        : "border-black/6 bg-[#fafbff] hover:border-black/12"
+                    } ${
+                      draggingBlockId === block.id ? "cursor-grabbing opacity-60" : "cursor-grab"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBlockId(block.id)}
+                      className="w-full text-left"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-medium text-black">
+                            {getSalesPageBlockDisplayTitle(block)}
+                          </p>
+                          <p className="mt-1 text-xs tracking-[0.12em] text-black/34">
+                            Тип блока: {getSalesPageBlockLabel(block.type)}
+                          </p>
+                              {section ? (
+                            <p className="mt-2 text-xs text-black/42">
+                              {startsSection ? "Секция" : "Продолжение"}:{" "}
+                              {localizeSalesPageText(section.label) || section.id}
+                            </p>
+                          ) : null}
+                        </div>
+                        {block.isVisible ? (
+                          <Badge variant="subtle">Видим</Badge>
+                        ) : (
+                          <Badge variant="default">Скрыт</Badge>
+                        )}
+                      </div>
+                    </button>
+                    {startsSection ? (
+                      <div className="mt-3 grid gap-2">
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            disabled={Boolean(pendingAction?.startsWith("add-kit"))}
+                            onClick={() =>
+                              handleCreateKit(activeKit, {
+                                anchorBlockId: block.id,
+                                position: "before",
+                              })
+                            }
+                          >
+                            <Plus className="mr-2 size-4" />
+                            Секция сверху
+                          </PremiumButton>
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            disabled={Boolean(pendingAction?.startsWith("add-kit"))}
+                            onClick={() =>
+                              handleCreateKit(activeKit, {
+                                anchorBlockId: sectionAnchorId,
+                                position: "after",
+                              })
+                            }
+                          >
+                            <Plus className="mr-2 size-4" />
+                            Секция снизу
+                          </PremiumButton>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-3">
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            onClick={() =>
+                              runMutation("move-section-up", async () =>
+                                moveSalesPageSection(block.id, "up"),
+                              )
+                            }
+                          >
+                            <ArrowUp className="mr-2 size-4" />
+                            Вверх
+                          </PremiumButton>
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            onClick={() =>
+                              runMutation("move-section-down", async () =>
+                                moveSalesPageSection(block.id, "down"),
+                              )
+                            }
+                          >
+                            <ArrowDown className="mr-2 size-4" />
+                            Вниз
+                          </PremiumButton>
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            onClick={() =>
+                              runMutation("duplicate-section", async () =>
+                                duplicateSalesPageSection(block.id),
+                              )
+                            }
+                          >
+                            <Copy className="mr-2 size-4" />
+                            Дублировать
+                          </PremiumButton>
+                        </div>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            disabled={Boolean(pendingAction?.startsWith("add-block-inline"))}
+                            onClick={() => handleCreateBlock(newBlockType, sectionAnchorId)}
+                          >
+                            <Plus className="mr-2 size-4" />
+                            Блок под секцией
+                          </PremiumButton>
+                          <PremiumButton
+                            type="button"
+                            tone="secondary"
+                            className="h-10 w-full px-4"
+                            onClick={() => handleOpenDeleteSection(block.id)}
+                          >
+                            Удалить секцию
+                          </PremiumButton>
+                        </div>
+                      </div>
                     ) : (
-                      <Badge variant="default">Hidden</Badge>
+                      <PremiumButton
+                        type="button"
+                        tone="secondary"
+                        className="mt-3 h-10 w-full px-4"
+                        disabled={Boolean(pendingAction?.startsWith("add-block-inline"))}
+                        onClick={() => handleCreateBlock(newBlockType, block.id)}
+                      >
+                        <Plus className="mr-2 size-4" />
+                        Вставить ниже
+                      </PremiumButton>
                     )}
                   </div>
-                </button>
+                    );
+                  })()}
+
+                  <div
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      setDropIndex(index + 1);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      handleDropAtIndex(index + 1);
+                    }}
+                    className={`h-3 rounded-full transition ${
+                      dropIndex === index + 1
+                        ? "bg-[#3d3bff]/18 ring-2 ring-[#3d3bff]/22"
+                        : "bg-transparent"
+                    }`}
+                  />
+                </div>
               ))}
             </div>
           </PremiumCard>
@@ -771,13 +2151,17 @@ export function SalesPageStudio({
           <div className="mb-5 flex items-center justify-between gap-3">
             <div>
               <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-                Live preview
+                Предпросмотр на холсте
               </p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                {deviceMode === "desktop" ? "Desktop canvas" : "Mobile canvas"}
+                {deviceMode === "desktop" ? "Десктопный холст" : "Мобильный холст"}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-black/46">
+                Активный набор секций: {activeKit?.title ?? "Стартовый набор"}.
+                Ниже секции можно вставлять прямо на холст, как в визуальном конструкторе.
               </p>
             </div>
-            <Badge variant="subtle">{isDirty ? "Live edits" : "Synced"}</Badge>
+            <Badge variant="subtle">{isDirty ? "Живые правки" : "Синхронизировано"}</Badge>
           </div>
 
           <CourseSalesPageRenderer
@@ -803,6 +2187,30 @@ export function SalesPageStudio({
                 runMutation("duplicate", async () =>
                   duplicateSalesPageBlock(blockId),
                 ),
+              onAddAfter: (blockId) => handleCreateBlock(newBlockType, blockId),
+              onAddSectionAbove: (blockId) =>
+                handleCreateKit(activeKit, {
+                  anchorBlockId: blockId,
+                  position: "before",
+                }),
+              onAddSectionBelow: (blockId) =>
+                handleCreateKit(activeKit, {
+                  anchorBlockId: blockId,
+                  position: "after",
+                }),
+              onMoveSectionUp: (blockId) =>
+                runMutation("move-section-up", async () =>
+                  moveSalesPageSection(blockId, "up"),
+                ),
+              onMoveSectionDown: (blockId) =>
+                runMutation("move-section-down", async () =>
+                  moveSalesPageSection(blockId, "down"),
+                ),
+              onDuplicateSection: (blockId) =>
+                runMutation("duplicate-section", async () =>
+                  duplicateSalesPageSection(blockId),
+                ),
+              onDeleteSection: (blockId) => handleOpenDeleteSection(blockId),
               onToggleVisibility: (blockId) =>
                 runMutation("toggle", async () =>
                   toggleSalesPageBlockVisibility(blockId),
@@ -827,21 +2235,21 @@ export function SalesPageStudio({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-                  Selected block
+                  Выбранный блок
                 </p>
                 <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                  {selectedBlock?.title ?? selectedBlock?.type ?? "Choose a block"}
+                  {selectedBlock ? getSalesPageBlockDisplayTitle(selectedBlock) : "Выбери блок"}
                 </p>
               </div>
               {selectedBlock ? (
-                <Badge variant="subtle">{selectedBlock.type}</Badge>
+                <Badge variant="subtle">{getSalesPageBlockLabel(selectedBlock.type)}</Badge>
               ) : null}
             </div>
 
             {selectedBlock ? (
               <div className="mt-5 space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-black">Panel title</label>
+                  <label className="text-sm font-medium text-black">Заголовок панели</label>
                   <input
                     value={selectedBlock.title ?? ""}
                     onChange={(event) =>
@@ -862,33 +2270,550 @@ export function SalesPageStudio({
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-black">Подзаголовок</label>
+                  <textarea
+                    value={selectedBlock.subtitle ?? ""}
+                    onChange={(event) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              blocks: current.blocks.map((block) =>
+                                block.id === selectedBlock.id
+                                  ? { ...block, subtitle: event.target.value }
+                                  : block,
+                              ),
+                            }
+                          : current,
+                      )
+                    }
+                    rows={3}
+                    className="premium-textarea"
+                  />
+                </div>
+
+                <div className="rounded-[1.6rem] border border-black/8 bg-[#fafbff] p-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-sm font-medium text-black">Заменить блок</p>
+                      <p className="mt-1 text-sm leading-6 text-black/46">
+                        Меняет тип блока целиком и подставляет новый content preset,
+                        сохраняя место внутри страницы.
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-3 sm:flex-row">
+                      <select
+                        value={selectedBlock.type}
+                        onChange={(event) =>
+                          runMutation("replace-block", async () =>
+                            replaceSalesPageBlockType(
+                              selectedBlock.id,
+                              event.target.value as SalesPageBlockDraft["type"],
+                            ),
+                          )
+                        }
+                        className="premium-select flex-1"
+                      >
+                        {salesPageBlockCatalog.map((blockOption) => (
+                          <option key={blockOption.type} value={blockOption.type}>
+                            {blockOption.title}
+                          </option>
+                        ))}
+                      </select>
+                      <Badge variant="subtle" className="self-start sm:self-center">
+                        сброс контента
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+
+                {selectedBlockSettings ? (
+                  <div className="rounded-[1.6rem] border border-black/8 bg-[#fafbff] p-4">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm font-medium text-black">Группа секции</p>
+                        <p className="mt-1 text-sm leading-6 text-black/46">
+                          Блоки с одинаковым ID секции, идущие подряд, собираются в
+                          одну визуальную секцию в предпросмотре, как в
+                          полноценном конструкторе сайтов. Если поля пустые, предпросмотр использует
+                          умные auto-секции из шаблона.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Название секции
+                          </label>
+                          <input
+                            value={selectedBlockSettings.sectionLabel ?? ""}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                sectionLabel: event.target.value,
+                              }))
+                            }
+                            placeholder="например, Доверие и доказательства"
+                            className="premium-control"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            ID секции
+                          </label>
+                          <input
+                            value={selectedBlockSettings.sectionId ?? ""}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                sectionId: slugifyCourseTitle(event.target.value),
+                              }))
+                            }
+                            placeholder="doverie-i-dokazatelstva"
+                            className="premium-control"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Стиль секции
+                          </label>
+                          <select
+                            value={selectedBlockSettings.sectionStyle}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                sectionStyle: event.target
+                                  .value as SalesPageBlockSettings["sectionStyle"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="glass">стекло</option>
+                            <option value="soft">мягкий</option>
+                            <option value="accent">акцент</option>
+                            <option value="gradient">градиент</option>
+                            <option value="midnight">полночь</option>
+                            <option value="outline">контур</option>
+                          </select>
+                        </div>
+
+                        <ColorField
+                          label="Акцент секции"
+                          value={selectedBlockSettings.sectionAccentColor ?? pageTheme.accent}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              sectionAccentColor: value,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Поверхность секции"
+                          value={selectedBlockSettings.sectionSurfaceColor ?? pageTheme.surface}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              sectionSurfaceColor: value,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Текст секции"
+                          value={selectedBlockSettings.sectionTextColor ?? pageTheme.text}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              sectionTextColor: value,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <PremiumButton
+                          type="button"
+                          tone="secondary"
+                          className="h-10 px-4"
+                          onClick={() =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => {
+                              const fallbackLabel =
+                                selectedBlock.title ?? selectedBlock.type ?? "Секция";
+                              const nextLabel =
+                                settings.sectionLabel?.trim() || fallbackLabel;
+                              const nextId =
+                                settings.sectionId?.trim() ||
+                                slugifyCourseTitle(nextLabel) ||
+                                slugifyCourseTitle(selectedBlock.type.toLowerCase());
+
+                              return {
+                                ...settings,
+                                sectionLabel: nextLabel,
+                                sectionId: nextId,
+                              };
+                            })
+                          }
+                        >
+                          Создать секцию из блока
+                        </PremiumButton>
+
+                        <PremiumButton
+                          type="button"
+                          tone="secondary"
+                          className="h-10 px-4"
+                          onClick={() =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              sectionId: "",
+                              sectionLabel: "",
+                            }))
+                          }
+                        >
+                          Убрать из секции
+                        </PremiumButton>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
+                {selectedBlockSettings ? (
+                  <div className="rounded-[1.6rem] border border-black/8 bg-[#fafbff] p-4">
+                    <div className="space-y-4">
+                      <div>
+                        <p className="text-sm font-medium text-black">Стиль блока</p>
+                        <p className="mt-1 text-sm leading-6 text-black/46">
+                          Быстрые пресеты для блока, чтобы собрать страницу как
+                          настоящий визуальный конструктор.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {salesPageBlockStylePresets.map((preset) => (
+                          <button
+                            key={preset.key}
+                            type="button"
+                            onClick={() =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                ...preset.settings,
+                              }))
+                            }
+                            className={`rounded-[1.2rem] border px-4 py-3 text-left text-sm transition ${
+                              selectedBlockSettings.variant === preset.key
+                                ? "border-[#3d3bff]/30 bg-[#eef0ff]"
+                                : "border-black/8 bg-white hover:border-black/14 hover:bg-[#fbfbff]"
+                            }`}
+                          >
+                            <p className="font-medium text-black">{preset.label}</p>
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Фон блока
+                          </label>
+                          <select
+                            value={selectedBlockSettings.backgroundStyle}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                backgroundStyle: event.target
+                                  .value as SalesPageBlockSettings["backgroundStyle"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="glass">стекло</option>
+                            <option value="soft">мягкий</option>
+                            <option value="accent">акцент</option>
+                            <option value="gradient">градиент</option>
+                            <option value="midnight">полночь</option>
+                            <option value="outline">контур</option>
+                            <option value="solid">сплошной</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Выравнивание
+                          </label>
+                          <select
+                            value={selectedBlockSettings.align}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                align: event.target.value as SalesPageBlockSettings["align"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="left">слева</option>
+                            <option value="center">по центру</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Отступы
+                          </label>
+                          <select
+                            value={selectedBlockSettings.padding}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                padding: event.target.value as SalesPageBlockSettings["padding"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="sm">малые</option>
+                            <option value="md">средние</option>
+                            <option value="lg">большие</option>
+                            <option value="xl">очень большие</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Макет
+                          </label>
+                          <select
+                            value={selectedBlockSettings.layout}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                layout: event.target.value as SalesPageBlockSettings["layout"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="split">в две зоны</option>
+                            <option value="stacked">вертикально</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Стиль дизайна
+                          </label>
+                          <select
+                            value={selectedBlockSettings.designStyle}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                designStyle: event.target
+                                  .value as SalesPageBlockSettings["designStyle"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="cards">карточки</option>
+                            <option value="editorial">редакционный</option>
+                            <option value="numbered">нумерованный</option>
+                            <option value="media">медиа</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Колонки сетки
+                          </label>
+                          <select
+                            value={selectedBlockSettings.gridColumns}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                gridColumns: Number(event.target.value) as SalesPageBlockSettings["gridColumns"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                            <option value={4}>4</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Стиль элементов
+                          </label>
+                          <select
+                            value={selectedBlockSettings.itemStyle}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                itemStyle: event.target.value as SalesPageBlockSettings["itemStyle"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="card">карточка</option>
+                            <option value="pill">плашка</option>
+                            <option value="minimal">минимальный</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Стиль иконок
+                          </label>
+                          <select
+                            value={selectedBlockSettings.iconStyle}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                iconStyle: event.target.value as SalesPageBlockSettings["iconStyle"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="soft">мягкий</option>
+                            <option value="solid">заливка</option>
+                            <option value="outline">контур</option>
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-black">
+                            Режим изображения
+                          </label>
+                          <select
+                            value={selectedBlockSettings.mediaFit}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                mediaFit: event.target
+                                  .value as SalesPageBlockSettings["mediaFit"],
+                              }))
+                            }
+                            className="premium-select"
+                          >
+                            <option value="cover">на весь блок</option>
+                            <option value="contain">целиком внутри</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <ColorField
+                          label="Акцентный цвет"
+                          value={selectedBlockSettings.accentColor ?? page?.theme.accent ?? "#3d3bff"}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              accentColor: value,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Цвет поверхности"
+                          value={selectedBlockSettings.surfaceColor ?? page?.theme.surface ?? "#ffffff"}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              surfaceColor: value,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Цвет текста"
+                          value={selectedBlockSettings.textColor ?? page?.theme.text ?? "#05070b"}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              textColor: value,
+                            }))
+                          }
+                        />
+                        <ColorField
+                          label="Цвет границы"
+                          value={selectedBlockSettings.borderColor ?? "rgba(15,23,42,0.08)"}
+                          onChange={(value) =>
+                            updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                              ...settings,
+                              borderColor: value,
+                            }))
+                          }
+                        />
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="flex items-center gap-3 rounded-[1.2rem] border border-black/8 bg-white px-4 py-3 text-sm text-black/62">
+                          <input
+                            type="checkbox"
+                            checked={selectedBlockSettings.showModules ?? true}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                showModules: event.target.checked,
+                              }))
+                            }
+                          />
+                          Показывать модули
+                        </label>
+                        <label className="flex items-center gap-3 rounded-[1.2rem] border border-black/8 bg-white px-4 py-3 text-sm text-black/62">
+                          <input
+                            type="checkbox"
+                            checked={selectedBlockSettings.showLessonCount ?? true}
+                            onChange={(event) =>
+                              updateLocalBlockSettings(selectedBlock.id, (settings) => ({
+                                ...settings,
+                                showLessonCount: event.target.checked,
+                              }))
+                            }
+                          />
+                          Показывать количество уроков
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+
                 {textFieldNames(selectedBlock.content).map(([field, label]) => (
                   <div key={field} className="space-y-2">
-                    <label className="text-sm font-medium text-black">{label}</label>
-                    {field === "body" || field === "subheadline" ? (
-                      <textarea
+                    {field === "coverImage" ? (
+                      <UploadUrlField
+                        label={label}
                         value={String(selectedBlock.content[field] ?? "")}
-                        onChange={(event) =>
-                          handleInlineChange(selectedBlock.id, field, event.target.value)
+                        onChange={(value) =>
+                          handleInlineChange(selectedBlock.id, field, value)
                         }
-                        rows={field === "body" ? 5 : 4}
-                        className="premium-textarea"
                       />
+                    ) : field === "body" || field === "subheadline" ? (
+                      <>
+                        <label className="text-sm font-medium text-black">{label}</label>
+                        <textarea
+                          value={String(selectedBlock.content[field] ?? "")}
+                          onChange={(event) =>
+                            handleInlineChange(selectedBlock.id, field, event.target.value)
+                          }
+                          rows={field === "body" ? 5 : 4}
+                          className="premium-textarea"
+                        />
+                      </>
                     ) : (
-                      <input
-                        value={String(selectedBlock.content[field] ?? "")}
-                        onChange={(event) =>
-                          handleInlineChange(selectedBlock.id, field, event.target.value)
-                        }
-                        className="premium-control"
-                      />
+                      <>
+                        <label className="text-sm font-medium text-black">{label}</label>
+                        <input
+                          value={String(selectedBlock.content[field] ?? "")}
+                          onChange={(event) =>
+                            handleInlineChange(selectedBlock.id, field, event.target.value)
+                          }
+                          className="premium-control"
+                        />
+                      </>
                     )}
                   </div>
                 ))}
 
                 {"badges" in selectedBlock.content ? (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-black">Badges</label>
+                    <label className="text-sm font-medium text-black">Бейджи</label>
                     <textarea
                       value={joinMultiline(selectedBlock.content.badges)}
                       onChange={(event) =>
@@ -906,15 +2831,15 @@ export function SalesPageStudio({
                   </div>
                 ) : null}
 
-                {["deliverables", "included", "screenshots"].map((field) =>
+                {["deliverables", "included"].map((field) =>
                   field in selectedBlock.content ? (
                     <div key={field} className="space-y-2">
                       <label className="text-sm font-medium text-black">
                         {field === "deliverables"
-                          ? "Deliverables"
+                          ? "Результаты"
                           : field === "included"
-                            ? "Included"
-                            : "Screenshots"}
+                            ? "Что входит"
+                            : "Скриншоты"}
                       </label>
                       <textarea
                         value={joinMultiline(selectedBlock.content[field])}
@@ -934,10 +2859,30 @@ export function SalesPageStudio({
                   ) : null,
                 )}
 
+                {"screenshots" in selectedBlock.content ? (
+                  <ImageListEditor
+                    label="Скриншоты"
+                    values={
+                      Array.isArray(selectedBlock.content.screenshots)
+                        ? (selectedBlock.content.screenshots as string[])
+                        : []
+                    }
+                    onChange={(values) =>
+                      updateLocalBlock(selectedBlock.id, (block) => ({
+                        ...block,
+                        content: {
+                          ...block.content,
+                          screenshots: values,
+                        },
+                      }))
+                    }
+                  />
+                ) : null}
+
                 {"items" in selectedBlock.content ? (
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-black">
-                      Items
+                      Элементы
                     </label>
                     <StructuredItemsEditor
                       items={
@@ -980,6 +2925,59 @@ export function SalesPageStudio({
                   </div>
                 ) : null}
 
+                {"links" in selectedBlock.content ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-black">Ссылки</label>
+                    <LinksEditor
+                      items={
+                        Array.isArray(selectedBlock.content.links)
+                          ? (selectedBlock.content.links as Array<{
+                              label?: string;
+                              url?: string;
+                            }>)
+                          : []
+                      }
+                      onChange={(items) =>
+                        updateLocalBlock(selectedBlock.id, (block) => ({
+                          ...block,
+                          content: {
+                            ...block.content,
+                            links: items,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                ) : null}
+
+                {"comparisonItems" in selectedBlock.content ? (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-black">
+                      Строки сравнения
+                    </label>
+                    <ComparisonEditor
+                      items={
+                        Array.isArray(selectedBlock.content.comparisonItems)
+                          ? (selectedBlock.content.comparisonItems as Array<{
+                              label?: string;
+                              ordinaryCourse?: string;
+                              nowaSchoolCourse?: string;
+                            }>)
+                          : []
+                      }
+                      onChange={(items) =>
+                        updateLocalBlock(selectedBlock.id, (block) => ({
+                          ...block,
+                          content: {
+                            ...block.content,
+                            comparisonItems: items,
+                          },
+                        }))
+                      }
+                    />
+                  </div>
+                ) : null}
+
                 <div className="grid gap-3">
                   <PremiumButton
                     type="button"
@@ -992,7 +2990,7 @@ export function SalesPageStudio({
                     ) : (
                       <CheckCircle2 className="mr-2 size-4" />
                     )}
-                    Save block
+                    Сохранить блок
                   </PremiumButton>
 
                   <div className="grid gap-3 sm:grid-cols-2">
@@ -1007,7 +3005,7 @@ export function SalesPageStudio({
                         )
                       }
                     >
-                      Reset block
+                      Сбросить блок
                     </PremiumButton>
                     <PremiumButton
                       type="button"
@@ -1021,7 +3019,7 @@ export function SalesPageStudio({
                       }
                     >
                       <Bot className="mr-2 size-4" />
-                      AI improve
+                      AI-улучшение
                     </PremiumButton>
                   </div>
                 </div>
@@ -1029,7 +3027,7 @@ export function SalesPageStudio({
             ) : (
               <div className="mt-5">
                 <FeedbackCard
-                  message="Выбери блок слева или на canvas, чтобы редактировать тексты, изображения и массивы контента."
+                  message="Выбери блок в левой колонке или прямо на холсте, чтобы редактировать контент как в отдельном конструкторе сайтов."
                 />
               </div>
             )}
@@ -1040,11 +3038,11 @@ export function SalesPageStudio({
             className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
           >
             <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-              Page settings
+              Настройки страницы
             </p>
             <div className="mt-5 space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-black">Page title</label>
+                <label className="text-sm font-medium text-black">Название страницы</label>
                 <input
                   value={page?.title ?? ""}
                   onChange={(event) =>
@@ -1061,7 +3059,7 @@ export function SalesPageStudio({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-black">Meta title</label>
+                <label className="text-sm font-medium text-black">SEO-заголовок</label>
                 <input
                   value={page?.metaTitle ?? ""}
                   onChange={(event) =>
@@ -1078,7 +3076,7 @@ export function SalesPageStudio({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-black">Meta description</label>
+                <label className="text-sm font-medium text-black">SEO-описание</label>
                 <textarea
                   value={page?.metaDescription ?? ""}
                   onChange={(event) =>
@@ -1096,7 +3094,7 @@ export function SalesPageStudio({
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-black">OG image</label>
+                <label className="text-sm font-medium text-black">OG-изображение</label>
                 <input
                   value={page?.ogImage ?? ""}
                   onChange={(event) =>
@@ -1113,6 +3111,122 @@ export function SalesPageStudio({
                 />
               </div>
 
+              <div className="rounded-[1.6rem] border border-black/8 bg-[#fafbff] p-4">
+                <div>
+                  <p className="text-sm font-medium text-black">Тема страницы</p>
+                  <p className="mt-1 text-sm leading-6 text-black/46">
+                    Общая палитра страницы. Блоки могут наследовать ее или жить
+                    со своей локальной палитрой.
+                  </p>
+                </div>
+
+                <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                  {salesPageThemePresets.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() =>
+                        setPage((current) =>
+                          current
+                            ? {
+                                ...current,
+                                theme: preset.theme,
+                              }
+                            : current,
+                        )
+                      }
+                      className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
+                        page?.theme.accent === preset.theme.accent
+                          ? "border-[#3d3bff]/30 bg-[#eef0ff]"
+                          : "border-black/8 bg-white hover:border-black/14 hover:bg-[#fbfbff]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="size-4 rounded-full border border-black/8"
+                          style={{ backgroundColor: preset.theme.accent }}
+                        />
+                        <span className="text-sm font-medium text-black">
+                          {preset.label}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <ColorField
+                    label="Акцент"
+                    value={page?.theme.accent ?? "#3d3bff"}
+                    onChange={(value) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              theme: {
+                                ...current.theme,
+                                accent: value,
+                                accentSoft: hexToRgba(value, 0.12),
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <ColorField
+                    label="Фон"
+                    value={page?.theme.background ?? "#f6f7fb"}
+                    onChange={(value) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              theme: {
+                                ...current.theme,
+                                background: value,
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <ColorField
+                    label="Поверхность"
+                    value={page?.theme.surface ?? "#ffffff"}
+                    onChange={(value) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              theme: {
+                                ...current.theme,
+                                surface: value,
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <ColorField
+                    label="Текст"
+                    value={page?.theme.text ?? "#05070b"}
+                    onChange={(value) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              theme: {
+                                ...current.theme,
+                                text: value,
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
               <PremiumButton
                 type="button"
                 className="h-11 w-full"
@@ -1124,7 +3238,7 @@ export function SalesPageStudio({
                 ) : (
                   <CheckCircle2 className="mr-2 size-4" />
                 )}
-                Save page settings
+                Сохранить настройки страницы
               </PremiumButton>
             </div>
           </PremiumCard>
@@ -1136,32 +3250,32 @@ export function SalesPageStudio({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-                  Analytics
+                  Аналитика
                 </p>
                 <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                  Sales page signals
+                  Сигналы продающей страницы
                 </p>
               </div>
-              <Badge variant="subtle">{analytics.pageViews} views</Badge>
+              <Badge variant="subtle">{analytics.pageViews} просмотров</Badge>
             </div>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <AnalyticsMiniCard
-                label="Views"
+                label="Просмотры"
                 value={String(analytics.pageViews)}
                 description="Просмотры страницы курса"
               />
               <AnalyticsMiniCard
-                label="Checkout"
+                label="Переходы к оплате"
                 value={`${analytics.viewToCheckoutConversion}%`}
-                description="Конверсия просмотр -> checkout"
+                description="Конверсия из просмотра в оплату"
               />
               <AnalyticsMiniCard
-                label="Purchases"
+                label="Покупки"
                 value={String(analytics.totalSales)}
                 description="Покупки и mock paid orders"
               />
               <AnalyticsMiniCard
-                label="Revenue"
+                label="Доход"
                 value={`${analytics.authorRevenue.toFixed(0)} ${course.currency}`}
                 description="Доход автора после 15%"
               />
@@ -1175,20 +3289,20 @@ export function SalesPageStudio({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-                  Moderation
+                  Модерация
                 </p>
                 <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                  Queue & issues
+                  Очередь и замечания
                 </p>
               </div>
-              <Badge variant="subtle">{moderation.openIssuesCount} open issues</Badge>
+              <Badge variant="subtle">{moderation.openIssuesCount} открытых замечаний</Badge>
             </div>
 
             <div className="mt-5 space-y-3">
               {moderation.latestSubmission ? (
                 <div className="rounded-[1.6rem] border border-black/6 bg-[#fafbff] p-4">
                   <p className="text-sm font-medium text-black">
-                    Last submission: {moderation.latestSubmission.status}
+                    Последняя отправка: {moderation.latestSubmission.status}
                   </p>
                   {moderation.latestSubmission.adminComment ? (
                     <p className="mt-2 text-sm leading-7 text-black/56">
@@ -1231,10 +3345,10 @@ export function SalesPageStudio({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs uppercase tracking-[0.24em] text-black/32">
-                    AI optimizer
+                    AI-оптимизатор
                   </p>
                   <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                    Suggestions
+                    Подсказки
                   </p>
                 </div>
                 <Badge variant="primary">{suggestions.length}</Badge>
@@ -1268,7 +3382,7 @@ export function SalesPageStudio({
                           )
                         }
                       >
-                        Apply
+                        Применить
                       </PremiumButton>
                       <PremiumButton
                         type="button"
@@ -1280,7 +3394,7 @@ export function SalesPageStudio({
                           )
                         }
                       >
-                        Reject
+                        Отклонить
                       </PremiumButton>
                     </div>
                   </motion.div>

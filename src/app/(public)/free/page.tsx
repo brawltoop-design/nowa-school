@@ -8,9 +8,9 @@ import { SectionHeader } from "@/components/premium/section-header";
 import { Badge } from "@/components/ui/badge";
 
 export const metadata: Metadata = {
-  title: "Бесплатный starter kit nowa school",
+  title: "Бесплатный стартовый набор nowa school",
   description:
-    "Забери 30 prompts, 5 идей AI-агентов и шаблон первого лендинга для старта в вайбкодинге.",
+    "Забери 30 промтов, 5 идей AI-агентов и шаблон первого лендинга для старта в вайбкодинге.",
 };
 
 const kitItems = [
@@ -37,23 +37,23 @@ export default function FreePage() {
       <div className="app-shell space-y-10">
         <section className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_480px] lg:items-center">
           <div>
-            <Badge variant="primary">Free starter kit</Badge>
+            <Badge variant="primary">Бесплатный стартовый набор</Badge>
             <h1 className="mt-5 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl">
               Забери бесплатный набор для первого AI-продукта
             </h1>
             <p className="mt-5 max-w-3xl text-lg leading-8 text-black/62">
               30 промтов, 5 идей AI-агентов и шаблон первого лендинга. Никакого
-              риска входа: сначала пробуешь, потом выбираешь гайд или bootcamp.
+              риска входа: сначала пробуешь, потом выбираешь гайд или буткемп.
             </p>
           </div>
 
           <PremiumCard padding="lg" className="rounded-[2.4rem] bg-white/94">
             <h2 className="text-2xl font-semibold tracking-tight text-black">
-              Получить starter kit
+              Получить стартовый набор
             </h2>
             <p className="mt-3 text-sm leading-7 text-black/56">
-              В MVP форма показывает success state. Следующий шаг — подключить
-              Telegram bot или CRM.
+              В MVP форма показывает успешную отправку. Следующий шаг — подключить
+              Телеграм-бота или CRM.
             </p>
             <div className="mt-6">
               <LeadCaptureForm buttonLabel="Забрать бесплатно" />
@@ -65,7 +65,7 @@ export default function FreePage() {
           <SectionHeader
             eyebrow="Что внутри"
             title="Материалы, которые помогают начать без хаоса"
-            description="Starter kit закрывает страх входа и дает понятный первый шаг."
+            description="Стартовый набор закрывает страх входа и дает понятный первый шаг."
           />
           <div className="mt-8 grid gap-5 md:grid-cols-3">
             {kitItems.map((item) => (
@@ -87,17 +87,17 @@ export default function FreePage() {
               Почему бесплатно
             </h2>
             <p className="mt-3 text-sm leading-7 text-black/58">
-              Первый шаг должен быть легким. Starter kit показывает подход
-              nowa school: не обещания, а prompts, структура и первые артефакты.
+              Первый шаг должен быть легким. Стартовый набор показывает подход
+              nowa school: не обещания, а промты, структура и первые артефакты.
             </p>
           </PremiumCard>
 
           <PremiumCard padding="lg" className="rounded-[2.3rem] bg-black text-white">
             <h2 className="text-3xl font-semibold tracking-tight">
-              Следующий шаг после kit
+              Следующий шаг после набора
             </h2>
             <p className="mt-3 text-sm leading-7 text-white/62">
-              Выбери mini-guide, зайди в Telegram или пройди bootcamp, чтобы
+              Выбери мини-гайд, зайди в Телеграм или пройди буткемп, чтобы
               собрать первый продукт руками.
             </p>
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">

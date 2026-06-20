@@ -18,12 +18,12 @@ export default function NewAuthorCoursePage() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_280px]">
         <PremiumCard padding="lg" className="rounded-[2.6rem] bg-white/92 backdrop-blur-xl">
-          <Badge variant="primary">Course setup</Badge>
+          <Badge variant="primary">Запуск курса</Badge>
           <SectionHeader
             className="mt-5"
             eyebrow="Создание курса"
-            title="Создай курс и сразу переходи в builder"
-            description="Сначала заполняем основную карточку курса, после этого откроется builder для модулей и уроков."
+            title="Создай курс и сразу переходи в конструктор"
+            description="Сначала заполняем основную карточку курса, после этого откроется конструктор модулей и уроков."
           />
 
           <div className="mt-8">
@@ -40,7 +40,7 @@ export default function NewAuthorCoursePage() {
               Новый продукт
             </h2>
             <p className="mt-3 text-sm leading-7 text-white/68">
-              Builder откроется сразу после создания и позволит руками собрать
+              Конструктор откроется сразу после создания и позволит руками собрать
               курс до уровня модулей и уроков.
             </p>
           </PremiumCard>
@@ -77,7 +77,7 @@ export default function NewAuthorCoursePage() {
               href="/author"
               className="mt-6 inline-flex text-sm font-medium text-black/56 transition duration-200 hover:text-black"
             >
-              Назад к dashboard
+              Назад в кабинет
             </Link>
           </PremiumCard>
         </div>

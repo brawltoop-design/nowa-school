@@ -132,7 +132,7 @@ export function AssistantChat({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="primary">AI assistant</Badge>
+              <Badge variant="primary">AI-наставник</Badge>
               <Badge variant="subtle">Только по материалам курса</Badge>
             </div>
             <h2
@@ -149,8 +149,8 @@ export function AssistantChat({
                 isDock ? "max-w-sm" : "max-w-3xl",
               )}
             >
-              Задавай вопросы по {courseTitle}. Assistant отвечает только на основе
-              уроков, транскриптов, summary и текста курса.
+              Задавай вопросы по {courseTitle}. AI-наставник отвечает только на основе
+              уроков, транскриптов, AI-выжимок и текста курса.
             </p>
           </div>
 
@@ -163,10 +163,10 @@ export function AssistantChat({
             >
               <div className="flex items-center gap-2 font-medium text-black">
                 <Shield className="size-4 text-[#3d3bff]" />
-                Context-locked
+                Только в контексте курса
               </div>
               <p className={cn("mt-2 leading-6", isDock ? "max-w-40" : "max-w-48")}>
-                Если ответа нет в материалах, assistant честно скажет об этом.
+                Если ответа нет в материалах, наставник честно скажет об этом.
               </p>
             </div>
 
@@ -362,7 +362,7 @@ export function AssistantChat({
 
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs leading-6 text-black/42">
-              Assistant отвечает только на основе материалов курса. Быстрая отправка:
+              AI-наставник отвечает только на основе материалов курса. Быстрая отправка:
               `Ctrl/Cmd + Enter`.
             </p>
 

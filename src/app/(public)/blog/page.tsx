@@ -13,7 +13,7 @@ import { blogPosts, guides } from "@/lib/marketing";
 export const metadata: Metadata = {
   title: "Блог nowa school - вайбкодинг, AI-агенты и MVP",
   description:
-    "Статьи nowa school про AI-first навыки, вайбкодинг, prompts, практические материалы и запуск первых digital-продуктов.",
+    "Статьи nowa school про AI-first навыки, вайбкодинг, промты, практические материалы и запуск первых digital-продуктов.",
 };
 
 export default function BlogPage() {
@@ -22,13 +22,13 @@ export default function BlogPage() {
       <section className="app-shell pb-12 pt-10 sm:pt-16 lg:pb-18 lg:pt-20">
         <AnimatedSection className="mx-auto max-w-5xl text-center">
           <div className="flex justify-center">
-            <Badge variant="primary">Blog</Badge>
+            <Badge variant="primary">Блог</Badge>
           </div>
           <h1 className="mt-6 text-5xl font-semibold leading-[0.98] tracking-tight text-black sm:text-6xl lg:text-7xl">
             Короткие разборы про AI-first создание продуктов
           </h1>
           <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-black/62 sm:text-xl">
-            Пишем про prompts, вайбкодинг, продуктовую упаковку, AI-агентов и
+            Пишем про промты, вайбкодинг, продуктовую упаковку, AI-агентов и
             практические сценарии без инфошума.
           </p>
         </AnimatedSection>
@@ -71,7 +71,7 @@ export default function BlogPage() {
           <SectionHeader
             eyebrow="Что читать дальше"
             title="Лучший блог-пост - тот, который превращается в практику"
-            description="Поэтому рядом со статьями ведем в гайды: там уже есть prompts, файлы и конкретный результат."
+            description="Поэтому рядом со статьями ведем в гайды: там уже есть промты, файлы и конкретный результат."
             action={
               <PremiumButton asChild tone="secondary">
                 <Link href="/guides">Все гайды</Link>
@@ -104,18 +104,18 @@ export default function BlogPage() {
         <div className="app-shell grid gap-8 lg:grid-cols-[1fr_440px] lg:items-center">
           <div>
             <Badge variant="subtle" className="bg-white/10 text-white/72">
-              Newsletter
+              Обновления
             </Badge>
             <h2 className="mt-5 max-w-3xl text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-              Получай новые разборы и starter files без лишнего шума
+              Получай новые разборы и стартовые материалы без лишнего шума
             </h2>
             <p className="mt-4 max-w-2xl text-base leading-8 text-white/62">
-              Оставь email или Telegram - покажем, как развивать nowa school дальше.
+              Оставь email или Телеграм - покажем, как развивать nowa school дальше.
             </p>
           </div>
           <LeadCaptureForm
             title="Подписаться на обновления"
-            description="Starter kit придет как первый материал."
+            description="Стартовый набор придет как первый материал."
             buttonLabel="Подписаться"
             className="border-white/10 bg-white text-black"
           />
