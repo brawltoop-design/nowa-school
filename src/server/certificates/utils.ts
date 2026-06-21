@@ -4,6 +4,7 @@ import {
   CertificateType,
   type Prisma,
 } from "@prisma/client";
+import { getAppUrl, getCertificateVerificationUrl } from "@/server/app-url";
 import { getPrismaClient } from "@/server/db";
 
 export const VERIFIED_SKILL_CRITERIA = [
@@ -66,7 +67,7 @@ export function buildOpenBadgeMetadata(args: {
     issuer: {
       type: "Profile",
       name: "nowa school",
-      url: process.env.NEXTAUTH_URL ?? "http://localhost:3001",
+      url: getAppUrl(),
     },
     credentialSubject: {
       type: "AchievementSubject",
@@ -84,8 +85,7 @@ export function buildOpenBadgeMetadata(args: {
 }
 
 export function getVerificationUrl(certificateId: string) {
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3001";
-  return `${baseUrl.replace(/\/$/, "")}/cert/${encodeURIComponent(certificateId)}`;
+  return getCertificateVerificationUrl(certificateId);
 }
 
 export function getCertificateLevel(score: number) {

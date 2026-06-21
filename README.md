@@ -40,10 +40,38 @@ prisma/
 
 1. Copy `.env.example` to `.env`.
 2. Update the PostgreSQL credentials and auth secret.
+3. Keep `DATABASE_URL` for the app runtime and `DIRECT_URL` for Prisma CLI commands and migrations.
 
 ```bash
 cp .env.example .env
 ```
+
+### Required Variables
+
+- `DATABASE_URL` - pooled/runtime PostgreSQL connection
+- `DIRECT_URL` - direct/non-pooled PostgreSQL connection for Prisma migrate/seed
+- `APP_URL` - canonical public app URL used in certificates and external links
+- `NEXTAUTH_URL` - auth callback base URL
+- `NEXTAUTH_SECRET` - shared auth secret
+
+### Vercel Production
+
+- Set `APP_URL=https://nowa-school.vercel.app`
+- Set `NEXTAUTH_URL=https://nowa-school.vercel.app`
+- Keep `DATABASE_URL` from the Neon/Vercel integration
+- Map `DIRECT_URL` to the non-pooling Neon URL
+
+### Vercel Preview
+
+- Do not point `NEXTAUTH_URL` to production
+- Let preview deployments resolve their host from `VERCEL_URL`
+- Keep `DATABASE_URL`, `DIRECT_URL`, and `NEXTAUTH_SECRET`
+
+### AI / Transcription Defaults
+
+- `AI_PROVIDER=mock`
+- `TRANSCRIPTION_PROVIDER=mock`
+- `DEEPSEEK_BASE_URL=https://api.deepseek.com`
 
 ## Run Locally
 

@@ -14,6 +14,10 @@ import {
   UserRole,
 } from "@prisma/client";
 import { createInitialSalesPage } from "../src/lib/sales-page";
+import {
+  getAppUrl,
+  getCertificateVerificationUrl,
+} from "../src/server/app-url";
 import { getPrismaClient } from "../src/server/db";
 import { hashPassword } from "../src/server/password";
 
@@ -1151,7 +1155,7 @@ async function seedCertificates(
     "Project delivery",
     "AI-first course assets",
   ];
-  const verificationUrl = `${process.env.NEXTAUTH_URL ?? "http://localhost:3001"}/cert/${certificateId}`;
+  const verificationUrl = getCertificateVerificationUrl(certificateId);
   const openBadgeMetadata = {
     "@context": ["https://www.w3.org/ns/credentials/v2"],
     type: ["VerifiableCredential", "OpenBadgeCredential"],
@@ -1162,7 +1166,7 @@ async function seedCertificates(
     issuer: {
       type: "Profile",
       name: "nowa school",
-      url: process.env.NEXTAUTH_URL ?? "http://localhost:3001",
+      url: getAppUrl(),
     },
     credentialSubject: {
       type: "AchievementSubject",
