@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { GradientBackground } from "@/components/premium/gradient-background";
 import { PublicNavbar } from "@/components/premium/public-navbar";
-import { SiteFooter } from "@/components/premium/site-footer";
+import { PublicFooterClient } from "@/components/premium/public-footer-client";
 
 export default function PublicLayout({
   children,
@@ -13,7 +13,7 @@ export default function PublicLayout({
       <GradientBackground />
       <PublicNavbar />
       <main>{children}</main>
-      <SiteFooter />
+      <PublicFooterClient />
     </div>
   );
 }

@@ -19,11 +19,20 @@ import {
   modulePracticeSchema,
   type ModulePracticeInput,
 } from "@/lib/module-practice";
-import { createInitialSalesPage } from "@/lib/sales-page";
+import {
+  coerceSalesPageTheme,
+  createInitialSalesPage,
+} from "@/lib/sales-page";
 import {
   authorLessonPracticeSchema,
   type AuthorLessonPracticeInput,
 } from "@/lib/validators/author-practice";
+import {
+  creativeStudioCourseCardSchema,
+  creativeStudioFooterSocialsSchema,
+  type CreativeStudioCourseCardInput,
+  type CreativeStudioFooterSocialsInput,
+} from "@/lib/validators/creative-studio";
 import {
   courseFormSchema,
   courseOverviewSchema,
@@ -154,6 +163,7 @@ function revalidateAuthorCourse(courseId: string, slug?: string | null) {
   revalidatePath("/author/courses/new");
   revalidatePath(`/author/courses/${courseId}/builder`);
   revalidatePath(`/author/courses/${courseId}/studio`);
+  revalidatePath(`/author/courses/${courseId}/creative-studio`);
 
   for (const path of getAllCourseStudioPaths(courseId)) {
     revalidatePath(path);
@@ -173,6 +183,111 @@ function buildAiPrompt(transcript: string) {
   return compactTranscript.length > 2000
     ? `${compactTranscript.slice(0, 1997)}...`
     : compactTranscript;
+}
+
+async function ensureEditableSalesPage(
+  courseId: string,
+  actor: AuthorActor,
+) {
+  const prisma = getPrismaClient();
+  const course = await prisma.course.findFirst({
+    where: {
+      id: courseId,
+      ...buildCourseAccessWhere(actor),
+    },
+    select: {
+      id: true,
+      slug: true,
+      title: true,
+      description: true,
+      category: true,
+      level: true,
+      language: true,
+      price: true,
+      currency: true,
+      coverUrl: true,
+      aiEnhanced: true,
+      authorId: true,
+      author: {
+        select: {
+          name: true,
+          email: true,
+          avatarUrl: true,
+        },
+      },
+      salesPage: {
+        select: {
+          id: true,
+          title: true,
+          theme: true,
+        },
+      },
+    },
+  });
+
+  if (!course) {
+    return null;
+  }
+
+  if (course.salesPage) {
+    return course;
+  }
+
+  const initialSalesPage = createInitialSalesPage({
+    id: course.id,
+    slug: course.slug,
+    title: course.title,
+    description: course.description,
+    category: course.category,
+    level: course.level,
+    language: course.language,
+    price: Number(course.price),
+    currency: course.currency,
+    coverUrl: course.coverUrl,
+    aiEnhanced: course.aiEnhanced,
+    author: {
+      id: course.authorId,
+      name: course.author.name,
+      email: course.author.email,
+      avatarUrl: course.author.avatarUrl,
+    },
+    modules: [],
+    badges: [],
+  });
+
+  const createdSalesPage = await prisma.courseSalesPage.create({
+    data: {
+      courseId: course.id,
+      slug: course.slug,
+      status: initialSalesPage.status,
+      title: initialSalesPage.title,
+      metaTitle: initialSalesPage.metaTitle,
+      metaDescription: initialSalesPage.metaDescription,
+      ogImage: initialSalesPage.ogImage,
+      theme: toInputJson(initialSalesPage.theme),
+      blocks: {
+        create: initialSalesPage.blocks.map((block) => ({
+          type: block.type,
+          order: block.order,
+          title: block.title,
+          subtitle: block.subtitle,
+          content: toInputJson(block.content),
+          settings: toInputJson(block.settings),
+          isVisible: block.isVisible,
+        })),
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+      theme: true,
+    },
+  });
+
+  return {
+    ...course,
+    salesPage: createdSalesPage,
+  };
 }
 
 export async function createAuthorCourse(
@@ -369,6 +484,127 @@ export async function updateAuthorCourseOverview(
   return {
     success: true,
     message: "Основные данные курса обновлены.",
+  };
+}
+
+export async function saveCreativeStudioCourseCard(
+  courseId: string,
+  values: CreativeStudioCourseCardInput,
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getActionActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const course = await ensureEditableSalesPage(courseId, actor);
+
+  if (!course?.salesPage) {
+    return unauthorizedResult();
+  }
+
+  const parsed = creativeStudioCourseCardSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Проверь поля карточки курса.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const currentTheme = coerceSalesPageTheme(course.salesPage.theme);
+  const nextTheme = {
+    ...currentTheme,
+    courseCard: {
+      shortDescription: parsed.data.shortDescription,
+      oldPrice: parsed.data.oldPrice ?? null,
+      authorName: parsed.data.authorName,
+      badges: parsed.data.badges,
+      duration: parsed.data.duration,
+      lessonsCount: parsed.data.lessonsCount,
+      accentColor: parsed.data.accentColor || currentTheme.accent,
+      cardStyle: parsed.data.cardStyle,
+    },
+  };
+
+  await prisma.course.update({
+    where: { id: courseId },
+    data: {
+      title: parsed.data.title,
+      category: parsed.data.category,
+      level: parsed.data.level,
+      price: new Prisma.Decimal(parsed.data.price),
+      coverUrl: parsed.data.coverUrl ?? null,
+    },
+  });
+
+  await prisma.courseSalesPage.update({
+    where: {
+      id: course.salesPage.id,
+    },
+    data: {
+      title: parsed.data.title,
+      ogImage: parsed.data.coverUrl ?? null,
+      theme: toInputJson(nextTheme),
+    },
+  });
+
+  revalidateAuthorCourse(courseId, course.slug);
+
+  return {
+    success: true,
+    message: "Карточка курса обновлена.",
+  };
+}
+
+export async function saveCreativeStudioFooterSocials(
+  courseId: string,
+  values: CreativeStudioFooterSocialsInput,
+): Promise<AuthorActionResult> {
+  const prisma = getPrismaClient();
+  const actor = await getActionActor();
+
+  if (!actor) {
+    return unauthorizedResult();
+  }
+
+  const course = await ensureEditableSalesPage(courseId, actor);
+
+  if (!course?.salesPage) {
+    return unauthorizedResult();
+  }
+
+  const parsed = creativeStudioFooterSocialsSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      message: "Проверь social links футера.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
+    };
+  }
+
+  const currentTheme = coerceSalesPageTheme(course.salesPage.theme);
+
+  await prisma.courseSalesPage.update({
+    where: {
+      id: course.salesPage.id,
+    },
+    data: {
+      theme: toInputJson({
+        ...currentTheme,
+        footerSocials: parsed.data,
+      }),
+    },
+  });
+
+  revalidateAuthorCourse(courseId, course.slug);
+
+  return {
+    success: true,
+    message: "Ссылки футера сохранены.",
   };
 }
 

@@ -46,11 +46,13 @@ import {
   buildSalesPageSectionAppearance,
   coerceSalesPageBlockSettings,
   coerceSalesPageSectionSettings,
+  coerceSalesPageTheme,
   createSalesPageTemplateBlocks,
   getDefaultSalesPageTheme,
   getAutoSalesPageSectionSettings,
   getSalesPageBlockDisplayTitle,
   localizeSalesPageText,
+  type FooterSocialLinks,
   type SalesPageBlockContent,
   type SalesPageBlockDraft,
   type SalesPageCourseContext,
@@ -61,6 +63,7 @@ import {
 
 type EditorToolbarHandlers = {
   onSelect?: (blockId: string) => void;
+  onAddBefore?: (blockId: string) => void;
   onAddAfter?: (blockId: string) => void;
   onAddSectionAbove?: (blockId: string) => void;
   onAddSectionBelow?: (blockId: string) => void;
@@ -121,6 +124,42 @@ const iconMap = {
   wand: WandSparkles,
   layout: LayoutPanelTop,
 } as const;
+
+function buildFooterSocialHref(
+  kind: keyof FooterSocialLinks,
+  value: string | undefined,
+) {
+  if (!value) {
+    return null;
+  }
+
+  if (kind === "email") {
+    return value.startsWith("mailto:") ? value : `mailto:${value}`;
+  }
+
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+
+  if (kind === "telegram") {
+    return value.startsWith("@")
+      ? `https://t.me/${value.slice(1)}`
+      : `https://t.me/${value.replace(/^t\.me\//i, "")}`;
+  }
+
+  return `https://${value.replace(/^\/+/, "")}`;
+}
+
+const footerSocialLabels: Record<keyof FooterSocialLinks, string> = {
+  telegram: "Telegram",
+  instagram: "Instagram",
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  vk: "VK",
+  website: "Website",
+  email: "Email",
+  community: "Community",
+};
 
 function getVisitorId() {
   if (typeof window === "undefined") {
@@ -248,7 +287,14 @@ function coerceStrings(value: unknown) {
     : [];
 }
 
-function getGridColumnsClass(columns?: 2 | 3 | 4) {
+function getGridColumnsClass(
+  columns?: 2 | 3 | 4,
+  forceSingleColumn = false,
+) {
+  if (forceSingleColumn) {
+    return "grid-cols-1";
+  }
+
   switch (columns) {
     case 2:
       return "md:grid-cols-2";
@@ -304,6 +350,13 @@ function BlockToolbar({
         onClick={() => handlers.onDuplicate?.(block.id)}
       >
         <ChevronsUpDown className="size-4" />
+      </button>
+      <button
+        type="button"
+        className="inline-flex size-8 items-center justify-center rounded-full text-[#3d3bff] transition duration-200 hover:bg-[#3d3bff]/8"
+        onClick={() => handlers.onAddBefore?.(block.id)}
+      >
+        <ArrowUp className="size-4" />
       </button>
       <button
         type="button"
@@ -601,6 +654,7 @@ export function CourseSalesPageRenderer({
   const searchParams = useSearchParams();
   const trackedRef = useRef<Record<string, boolean>>({});
   const pageTheme = salesPage?.theme ?? getDefaultSalesPageTheme();
+  const footerSocials = coerceSalesPageTheme(salesPage?.theme).footerSocials ?? {};
   const blocks = useMemo(
     () =>
       (salesPage?.blocks.length
@@ -668,10 +722,53 @@ export function CourseSalesPageRenderer({
     return () => window.removeEventListener("scroll", onScroll);
   }, [pathname, searchParams, tracking]);
 
-  const previewClassName =
-    deviceMode === "mobile"
-      ? "mx-auto max-w-[430px] rounded-[2.4rem] border border-black/8 bg-[#f7f8fb] p-3 shadow-[0_24px_80px_rgba(15,23,42,0.12)]"
+  const isMobilePreview = deviceMode === "mobile";
+  const isTabletPreview = deviceMode === "tablet";
+  const previewClassName = isMobilePreview
+    ? "mx-auto w-full max-w-[430px] overflow-hidden rounded-[2.4rem] border border-black/8 bg-[#f7f8fb] p-3 shadow-[0_24px_80px_rgba(15,23,42,0.12)]"
+    : isTabletPreview
+      ? "mx-auto w-full max-w-[820px] overflow-hidden rounded-[2.8rem] border border-black/8 bg-[#f7f8fb] p-4 shadow-[0_24px_80px_rgba(15,23,42,0.1)]"
       : "";
+  const heroTitleClass = isMobilePreview
+    ? "mt-5 text-[2.1rem] font-semibold leading-[0.98] tracking-tight text-black"
+    : isTabletPreview
+      ? "mt-5 text-[3.2rem] font-semibold leading-[0.96] tracking-tight text-black"
+      : "mt-5 text-[clamp(2.3rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-tight text-black";
+  const heroBodyClass = isMobilePreview
+    ? "mt-5 max-w-3xl text-[15px] leading-7 text-black/62"
+    : isTabletPreview
+      ? "mt-5 max-w-3xl text-base leading-8 text-black/62"
+      : "mt-5 max-w-3xl text-base leading-8 text-black/62 sm:text-lg";
+  const sectionTitleClass = isMobilePreview
+    ? "mt-4 text-[1.9rem] font-semibold tracking-tight text-black"
+    : isTabletPreview
+      ? "mt-4 text-[2.35rem] font-semibold tracking-tight text-black"
+      : "mt-4 text-3xl font-semibold tracking-tight text-black sm:text-4xl";
+  const sectionBodyClass = isMobilePreview
+    ? "mt-4 text-[15px] leading-7 text-black/60"
+    : isTabletPreview
+      ? "mt-4 text-base leading-8 text-black/60"
+      : "mt-4 text-base leading-8 text-black/60";
+  const ctaTitleClass = isMobilePreview
+    ? "max-w-3xl text-[1.9rem] font-semibold leading-tight tracking-tight"
+    : isTabletPreview
+      ? "max-w-3xl text-[2.4rem] font-semibold leading-tight tracking-tight"
+      : "max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl";
+  const ctaBodyClass = isMobilePreview
+    ? "mt-4 max-w-2xl text-[15px] leading-7 text-white/66"
+    : isTabletPreview
+      ? "mt-4 max-w-2xl text-base leading-8 text-white/66"
+      : "mt-4 max-w-2xl text-base leading-8 text-white/66";
+  const sectionLeadClass = isMobilePreview
+    ? "mt-4 text-[15px] leading-7 text-black/60"
+    : isTabletPreview
+      ? "mt-4 text-base leading-8 text-black/60"
+      : "mt-4 text-lg leading-8 text-black/60";
+  const pricingValueClass = isMobilePreview
+    ? "mt-2 text-4xl font-semibold tracking-tight"
+    : isTabletPreview
+      ? "mt-2 text-[2.8rem] font-semibold tracking-tight"
+      : "mt-2 text-5xl font-semibold tracking-tight";
 
   return (
     <div className={previewClassName}>
@@ -681,6 +778,42 @@ export function CourseSalesPageRenderer({
           background: `radial-gradient(circle at top right, ${pageTheme.accentSoft} 0%, transparent 26%), ${pageTheme.background}`,
         }}
       >
+        {mode !== "public" ? (
+          <section className="px-3 pt-3">
+            <div className="overflow-hidden rounded-[1.9rem] border border-black/8 bg-white/86 px-5 py-5 shadow-[0_14px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.22em] text-black/34">
+                    Locked system header
+                  </p>
+                  <div className="mt-3 flex items-center gap-3">
+                    <div className="flex size-11 items-center justify-center rounded-2xl bg-[#0a0d14] text-sm font-semibold text-white">
+                      N
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-black">Nowa School</p>
+                      <p className="text-sm text-black/52">
+                        Верхняя оболочка каталога и навигация фиксированы.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {["Catalog", "Programs", "Reviews"].map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-black/8 bg-[#f7f8fc] px-4 py-2 text-xs font-medium uppercase tracking-[0.18em] text-black/52"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </section>
+        ) : null}
+
         {blocks.map((block, index) => {
           const content = block.content as SalesPageBlockContent;
           const items = coerceItems(content.items);
@@ -756,7 +889,7 @@ export function CourseSalesPageRenderer({
                 pageTheme,
               )
             : null;
-          const splitLayout = settings.layout !== "stacked";
+          const splitLayout = !isMobilePreview && settings.layout !== "stacked";
 
           if (block.type === "HERO") {
             return (
@@ -790,7 +923,7 @@ export function CourseSalesPageRenderer({
                         </div>
                       ))}
                     </div>
-                    <h1 className="mt-5 text-[clamp(2.3rem,5vw,4.8rem)] font-semibold leading-[0.95] tracking-tight text-black">
+                    <h1 className={heroTitleClass}>
                       <EditableText
                         blockId={block.id}
                         field="headline"
@@ -799,7 +932,7 @@ export function CourseSalesPageRenderer({
                         onInlineChange={toolbarHandlers?.onInlineChange}
                       />
                     </h1>
-                    <p className="mt-5 max-w-3xl text-base leading-8 text-black/62 sm:text-lg">
+                    <p className={heroBodyClass}>
                       <EditableText
                         blockId={block.id}
                         field="subheadline"
@@ -915,7 +1048,7 @@ export function CourseSalesPageRenderer({
                     {getSalesPageBlockDisplayTitle(block)}
                   </p>
                   {block.subtitle ? (
-                    <p className="mt-4 text-lg leading-8 text-black/60">
+                    <p className={sectionLeadClass}>
                       {localizeSalesPageText(block.subtitle)}
                     </p>
                   ) : null}
@@ -923,7 +1056,7 @@ export function CourseSalesPageRenderer({
                 <div
                   className={cn(
                     "mt-6 grid gap-4",
-                    getGridColumnsClass(settings.gridColumns),
+                    getGridColumnsClass(settings.gridColumns, isMobilePreview),
                   )}
                 >
                   {items.length ? (
@@ -933,7 +1066,8 @@ export function CourseSalesPageRenderer({
                         padding="md"
                         className={cn(
                           "ns-block-item rounded-[1.7rem]",
-                          settings.designStyle === "editorial" &&
+                          !isMobilePreview &&
+                            settings.designStyle === "editorial" &&
                             "md:col-span-2 xl:col-span-2",
                           settings.designStyle === "media" && "overflow-hidden p-0",
                         )}
@@ -1027,7 +1161,7 @@ export function CourseSalesPageRenderer({
                     <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                       {getSalesPageBlockDisplayTitle(block)}
                     </p>
-                    <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black sm:text-4xl">
+                    <h2 className={sectionTitleClass}>
                       <EditableText
                         blockId={block.id}
                         field="headline"
@@ -1038,7 +1172,7 @@ export function CourseSalesPageRenderer({
                         onInlineChange={toolbarHandlers?.onInlineChange}
                       />
                     </h2>
-                    <p className="mt-4 max-w-3xl text-base leading-8 text-black/60">
+                    <p className={sectionBodyClass}>
                       <EditableText
                         blockId={block.id}
                         field="body"
@@ -1105,10 +1239,10 @@ export function CourseSalesPageRenderer({
                     <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                       {getSalesPageBlockDisplayTitle(block)}
                     </p>
-                    <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+                    <h2 className={sectionTitleClass}>
                       Программа курса
                     </h2>
-                    <p className="mt-4 max-w-3xl text-base leading-8 text-black/60">
+                    <p className={sectionBodyClass}>
                       {String(
                         content.body ??
                           `Курс состоит из ${course.modules.length} модулей и помогает двигаться от базовой логики к практическому результату.`,
@@ -1208,16 +1342,21 @@ export function CourseSalesPageRenderer({
                     <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                       {getSalesPageBlockDisplayTitle(block)}
                     </p>
-                    <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+                    <h2 className={sectionTitleClass}>
                       Учиться у практиков с внятной системой
                     </h2>
-                    <p className="mt-4 text-base leading-8 text-black/60">
+                    <p className={sectionBodyClass}>
                       {String(
                         content.body ??
                           "Этот курс создан так, чтобы студент понимал не только тему, но и сценарий применения навыка.",
                       )}
                     </p>
-                    <div className="mt-6 grid gap-4 md:grid-cols-2">
+                    <div
+                      className={cn(
+                        "mt-6 grid gap-4",
+                        !isMobilePreview && "md:grid-cols-2",
+                      )}
+                    >
                       {items.map((item, index) => (
                         <PremiumCard
                           key={`${block.id}-${index}`}
@@ -1257,7 +1396,7 @@ export function CourseSalesPageRenderer({
                 <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                   {getSalesPageBlockDisplayTitle(block)}
                 </p>
-                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+                <h2 className={sectionTitleClass}>
                   Вопросы до покупки
                 </h2>
                 <div className="mt-6 space-y-3">
@@ -1324,10 +1463,10 @@ export function CourseSalesPageRenderer({
                   )}
                 >
                   <div>
-                <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
-                  {getSalesPageBlockDisplayTitle(block)}
+                    <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
+                      {getSalesPageBlockDisplayTitle(block)}
                     </p>
-                    <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+                    <h2 className={sectionTitleClass}>
                       {String(content.headline ?? "Что входит в стоимость")}
                     </h2>
                     <div className="mt-6 grid gap-3">
@@ -1361,7 +1500,7 @@ export function CourseSalesPageRenderer({
                         {String(content.oldPrice)}
                       </p>
                     ) : null}
-                    <p className="mt-2 text-5xl font-semibold tracking-tight">
+                    <p className={pricingValueClass}>
                       {formatCurrency(course.price, course.currency)}
                     </p>
                     <p className="mt-4 text-sm leading-7 text-white/64">
@@ -1406,7 +1545,7 @@ export function CourseSalesPageRenderer({
                         : `radial-gradient(circle at top left, ${pageTheme.accentSoft}, transparent 30%), radial-gradient(circle at bottom right, ${pageTheme.accentSoft}, transparent 28%), linear-gradient(145deg, ${settings.accentColor} 0%, ${pageTheme.text} 100%)`,
                   }}
                 >
-                  <h2 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
+                  <h2 className={ctaTitleClass}>
                     <EditableText
                       blockId={block.id}
                       field="headline"
@@ -1415,7 +1554,7 @@ export function CourseSalesPageRenderer({
                       onInlineChange={toolbarHandlers?.onInlineChange}
                     />
                   </h2>
-                  <p className="mt-4 max-w-2xl text-base leading-8 text-white/66">
+                  <p className={ctaBodyClass}>
                     <EditableText
                       blockId={block.id}
                       field="subheadline"
@@ -1457,11 +1596,17 @@ export function CourseSalesPageRenderer({
                 <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                   {getSalesPageBlockDisplayTitle(block)}
                 </p>
-                <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+                <h2 className={sectionTitleClass}>
                   Обычный курс против nowa school
                 </h2>
                 <div className="mt-6 overflow-hidden rounded-[1.8rem] border border-[color:var(--ns-block-card-border)]">
-                  <table className="w-full text-left">
+                  <div className={cn(isMobilePreview && "overflow-x-auto")}>
+                    <table
+                      className={cn(
+                        "w-full text-left",
+                        isMobilePreview && "min-w-[640px]",
+                      )}
+                    >
                     <thead className="ns-block-table-head text-sm">
                       <tr>
                         <th className="px-5 py-4 font-medium">Критерий</th>
@@ -1478,7 +1623,8 @@ export function CourseSalesPageRenderer({
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </SectionShell>
             );
@@ -1509,10 +1655,10 @@ export function CourseSalesPageRenderer({
                     <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                       {getSalesPageBlockDisplayTitle(block)}
                     </p>
-                    <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+                    <h2 className={sectionTitleClass}>
                       {String(content.headline ?? "Сертификат подтвержденного навыка")}
                     </h2>
-                    <p className="mt-4 text-base leading-8 text-black/60">
+                    <p className={sectionBodyClass}>
                       {String(
                         content.body ??
                           "Сертификат nowa school подтверждает практический результат и ведет на публичную страницу верификации.",
@@ -1550,7 +1696,7 @@ export function CourseSalesPageRenderer({
               <p className="text-sm font-medium uppercase tracking-[0.24em] text-black/38">
                 {getSalesPageBlockDisplayTitle(block)}
               </p>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-black">
+              <h2 className={sectionTitleClass}>
                 <EditableText
                   blockId={block.id}
                   field="headline"
@@ -1561,7 +1707,7 @@ export function CourseSalesPageRenderer({
                   onInlineChange={toolbarHandlers?.onInlineChange}
                 />
               </h2>
-              <p className="mt-4 text-base leading-8 text-black/60">
+              <p className={sectionBodyClass}>
                 <EditableText
                   blockId={block.id}
                   field="body"
@@ -1587,6 +1733,54 @@ export function CourseSalesPageRenderer({
             </SectionShell>
           );
         })}
+
+        <section className="px-3 pb-3 pt-1">
+          <div className="overflow-hidden rounded-[2rem] border border-black/8 bg-[#0a0d14] px-6 py-6 text-white">
+            <div className="flex flex-wrap items-start justify-between gap-5">
+              <div className="max-w-lg">
+                <p className="text-xs uppercase tracking-[0.22em] text-white/42">
+                  Nowa School
+                </p>
+                <h3 className="mt-3 text-2xl font-semibold tracking-tight">
+                  {mode === "public" ? "Практические курсы с верификацией навыка" : "Locked system footer"}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-white/66">
+                  {mode === "public"
+                    ? "Социальные ссылки автора и курса доступны ниже. Системная навигация и брендовая оболочка остаются частью платформы."
+                    : "Логотип и системная оболочка футера зафиксированы. Автор может настраивать только social links курса."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                {(Object.entries(footerSocials) as Array<
+                  [keyof FooterSocialLinks, string | undefined]
+                >)
+                  .filter(([, value]) => Boolean(value?.trim()))
+                  .map(([key, value]) => {
+                    const href = buildFooterSocialHref(key, value);
+
+                    return href ? (
+                      <a
+                        key={key}
+                        href={href}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-full border border-white/10 bg-white/6 px-3 py-2 text-sm text-white/82 transition hover:bg-white/10"
+                      >
+                        {footerSocialLabels[key]}
+                      </a>
+                    ) : null;
+                  })}
+                {Object.values(footerSocials).every((value) => !value?.trim()) ? (
+                  <p className="max-w-sm text-sm leading-7 text-white/52">
+                    Social links пока не добавлены. Заполни их в Creative Studio,
+                    и они появятся здесь.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );

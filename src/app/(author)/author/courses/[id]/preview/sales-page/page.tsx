@@ -109,7 +109,7 @@ export default async function AuthorSalesPagePreview({
           { label: "Авторский кабинет", href: "/author" },
           {
             label: course.title,
-            href: `/author/courses/${course.id}/studio/creative-site`,
+            href: `/author/courses/${course.id}/creative-studio`,
           },
           { label: "Предпросмотр" },
         ]}
@@ -137,7 +137,7 @@ export default async function AuthorSalesPagePreview({
               tone="secondary"
               className="h-12 px-5"
             >
-              <Link href={`/author/courses/${course.id}/studio/creative-site`}>
+              <Link href={`/author/courses/${course.id}/creative-studio`}>
                 <Eye className="mr-2 size-4" />
                 Вернуться в студию
               </Link>

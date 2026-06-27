@@ -144,6 +144,11 @@ export default async function PublicCoursePage({ params }: CoursePageProps) {
                 category={relatedCourse.category}
                 level={relatedCourse.level}
                 lessonCount={relatedCourse.lessonCount}
+                heroBadges={relatedCourse.heroBadges}
+                oldPrice={relatedCourse.oldPrice}
+                accentColor={relatedCourse.accentColor}
+                cardStyle={relatedCourse.cardStyle}
+                durationLabel={relatedCourse.durationLabel}
                 aiEnhanced={relatedCourse.aiEnhanced}
                 studentCount={relatedCourse.studentCount}
                 averageRating={relatedCourse.averageRating}

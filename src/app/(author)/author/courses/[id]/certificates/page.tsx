@@ -70,7 +70,7 @@ export default async function AuthorCourseCertificatesPage({
       <Breadcrumbs
         items={[
           { label: "Авторский кабинет", href: "/author" },
-          { label: course.title, href: `/author/courses/${course.id}/studio/overview` },
+          { label: course.title, href: `/author/courses/${course.id}/creative-studio` },
           { label: "Сертификаты" },
         ]}
       />
@@ -87,7 +87,7 @@ export default async function AuthorCourseCertificatesPage({
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <PremiumButton asChild tone="secondary" className="h-12 px-5">
-              <Link href={`/author/courses/${course.id}/studio/overview`}>
+              <Link href={`/author/courses/${course.id}/creative-studio`}>
                 <ArrowLeft className="mr-2 size-4" />
                 В студию курса
               </Link>

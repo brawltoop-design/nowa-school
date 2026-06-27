@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { JetBrains_Mono, Manrope } from "next/font/google";
-import { AppSessionProvider } from "@/components/providers/session-provider";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +36,7 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${manrope.variable} ${jetbrainsMono.variable} min-h-full bg-background font-sans text-foreground antialiased`}
       >
-        <AppSessionProvider>{children}</AppSessionProvider>
+        {children}
       </body>
     </html>
   );

@@ -5,7 +5,7 @@ export type SalesPageTemplateKey =
   | "creator-blogging"
   | "tech-vibe-coding";
 
-export type SalesPageDeviceMode = "desktop" | "mobile";
+export type SalesPageDeviceMode = "desktop" | "tablet" | "mobile";
 
 export type SalesPageBackgroundStyle =
   | "glass"
@@ -47,6 +47,32 @@ export type SalesPageTheme = {
   background: string;
   surface: string;
   text: string;
+  courseCard?: CourseCardSettings;
+  footerSocials?: FooterSocialLinks;
+};
+
+export type CourseCardStyle = "editorial" | "spotlight" | "compact";
+
+export type CourseCardSettings = {
+  shortDescription?: string;
+  oldPrice?: number | null;
+  authorName?: string;
+  badges?: string[];
+  duration?: string;
+  lessonsCount?: number | null;
+  accentColor?: string;
+  cardStyle?: CourseCardStyle;
+};
+
+export type FooterSocialLinks = {
+  telegram?: string;
+  instagram?: string;
+  youtube?: string;
+  tiktok?: string;
+  vk?: string;
+  website?: string;
+  email?: string;
+  community?: string;
 };
 
 export type SalesPageBlockItem = {
@@ -503,6 +529,65 @@ export function hexToRgba(value: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+export function coerceCourseCardSettings(value: unknown): CourseCardSettings {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const settings = value as Partial<CourseCardSettings>;
+
+  return {
+    shortDescription:
+      typeof settings.shortDescription === "string"
+        ? settings.shortDescription
+        : undefined,
+    oldPrice:
+      typeof settings.oldPrice === "number" && Number.isFinite(settings.oldPrice)
+        ? settings.oldPrice
+        : null,
+    authorName:
+      typeof settings.authorName === "string" ? settings.authorName : undefined,
+    badges: Array.isArray(settings.badges)
+      ? settings.badges.filter(
+          (badge): badge is string => typeof badge === "string" && badge.trim().length > 0,
+        )
+      : [],
+    duration: typeof settings.duration === "string" ? settings.duration : undefined,
+    lessonsCount:
+      typeof settings.lessonsCount === "number" &&
+      Number.isFinite(settings.lessonsCount)
+        ? settings.lessonsCount
+        : null,
+    accentColor:
+      typeof settings.accentColor === "string" ? settings.accentColor : undefined,
+    cardStyle:
+      settings.cardStyle === "editorial" ||
+      settings.cardStyle === "spotlight" ||
+      settings.cardStyle === "compact"
+        ? settings.cardStyle
+        : undefined,
+  };
+}
+
+export function coerceFooterSocialLinks(value: unknown): FooterSocialLinks {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  const links = value as Partial<FooterSocialLinks>;
+
+  return {
+    telegram: typeof links.telegram === "string" ? links.telegram : undefined,
+    instagram: typeof links.instagram === "string" ? links.instagram : undefined,
+    youtube: typeof links.youtube === "string" ? links.youtube : undefined,
+    tiktok: typeof links.tiktok === "string" ? links.tiktok : undefined,
+    vk: typeof links.vk === "string" ? links.vk : undefined,
+    website: typeof links.website === "string" ? links.website : undefined,
+    email: typeof links.email === "string" ? links.email : undefined,
+    community: typeof links.community === "string" ? links.community : undefined,
+  };
+}
+
 export function coerceSalesPageTheme(value: unknown): SalesPageTheme {
   if (!value || typeof value !== "object") {
     return getDefaultSalesPageTheme();
@@ -520,6 +605,8 @@ export function coerceSalesPageTheme(value: unknown): SalesPageTheme {
       typeof theme.background === "string" ? theme.background : "#f6f7fb",
     surface: typeof theme.surface === "string" ? theme.surface : "#ffffff",
     text: typeof theme.text === "string" ? theme.text : "#05070b",
+    courseCard: coerceCourseCardSettings(theme.courseCard),
+    footerSocials: coerceFooterSocialLinks(theme.footerSocials),
   };
 }
 

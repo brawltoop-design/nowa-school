@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Compass, Eye, Sparkles } from "lucide-react";
+import { ArrowUpRight, Compass, Eye, Sparkles, WandSparkles } from "lucide-react";
 import { useSelectedLayoutSegment } from "next/navigation";
 import {
   courseStudioSections,
@@ -114,13 +114,19 @@ export function CourseStudioHeader({ course }: CourseStudioHeaderProps) {
               К кабинету
             </Link>
           </PremiumButton>
+          <PremiumButton asChild className="h-12 px-5">
+            <Link href={`/author/courses/${course.id}/creative-studio`}>
+              <WandSparkles className="mr-2 size-4" />
+              Creative Studio
+            </Link>
+          </PremiumButton>
           <PremiumButton asChild tone="secondary" className="h-12 px-5">
             <Link href={`/author/courses/${course.id}/preview/sales-page`}>
               <Eye className="mr-2 size-4" />
               Предпросмотр
             </Link>
           </PremiumButton>
-          <PremiumButton asChild className="h-12 px-5">
+          <PremiumButton asChild tone="secondary" className="h-12 px-5">
             <Link href={`/courses/${course.slug}`}>
               Публичная страница
               <ArrowUpRight className="ml-2 size-4" />

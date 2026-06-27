@@ -323,7 +323,7 @@ export default async function AuthorDashboardPage() {
                       </Link>
                     </PremiumButton>
                     <PremiumButton asChild className="h-12 px-5">
-                      <Link href={`/author/courses/${course.id}/studio/creative-site`}>
+                      <Link href={`/author/courses/${course.id}/creative-studio`}>
                         Открыть студию
                       </Link>
                     </PremiumButton>

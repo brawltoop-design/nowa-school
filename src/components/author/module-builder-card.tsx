@@ -393,7 +393,10 @@ function LessonEditor({ lesson, isFirst, isLast }: LessonEditorProps) {
   };
 
   return (
-    <div className="rounded-[1.8rem] border border-black/6 bg-[#fbfbfc] p-5">
+    <div
+      id={`lesson-${lesson.id}`}
+      className="rounded-[1.8rem] border border-black/6 bg-[#fbfbfc] p-5"
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">

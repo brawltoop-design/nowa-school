@@ -14,13 +14,16 @@ import {
   FileWarning,
   ImagePlus,
   Laptop2,
+  Layers3,
   LoaderCircle,
   MonitorSmartphone,
+  Palette,
   Plus,
   Search,
   Send,
   ShieldCheck,
   Sparkles,
+  TabletSmartphone,
   WandSparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -89,6 +92,9 @@ type SalesPageStudioProps = {
   salesPage: SalesPageDraft | null;
   analytics: SalesPageAnalyticsSummary;
   moderation: CourseStudioData["moderation"];
+  embedded?: boolean;
+  deviceModeOverride?: SalesPageDeviceMode;
+  onDirtyChange?: (isDirty: boolean) => void;
 };
 
 const salesPageBlockGroups: Array<{
@@ -175,6 +181,157 @@ const salesPageMarketplaceKits = [
 
 type MarketplaceView = "all" | "acquisition" | "trust" | "program" | "kits";
 type MarketplaceKitKey = (typeof salesPageMarketplaceKits)[number]["key"];
+type BuilderSidebarTab = "blocks" | "layers" | "page-settings" | "theme" | "ai";
+type InspectorTab = "content" | "design" | "media" | "icons" | "ai";
+type BlockGalleryCategoryKey =
+  | "hero"
+  | "trust"
+  | "results"
+  | "video"
+  | "curriculum"
+  | "pricing"
+  | "faq"
+  | "cta";
+type BlockPreviewTone =
+  | "hero"
+  | "heroSplit"
+  | "trust"
+  | "testimonials"
+  | "numbers"
+  | "media"
+  | "curriculum"
+  | "pricing"
+  | "faq"
+  | "cta";
+
+type VisualBlockCard = {
+  key: string;
+  title: string;
+  subtitle: string;
+  type: SalesPageBlockDraft["type"];
+  tone: BlockPreviewTone;
+  badge?: string;
+};
+
+const builderSidebarTabs: Array<{ key: BuilderSidebarTab; label: string; icon: typeof Boxes }> = [
+  { key: "blocks", label: "Blocks", icon: Boxes },
+  { key: "layers", label: "Layers", icon: Layers3 },
+  { key: "page-settings", label: "Page Settings", icon: Copy },
+  { key: "theme", label: "Theme", icon: Palette },
+  { key: "ai", label: "AI", icon: Bot },
+];
+
+const inspectorTabs: Array<{ key: InspectorTab; label: string }> = [
+  { key: "content", label: "Content" },
+  { key: "design", label: "Design" },
+  { key: "media", label: "Media" },
+  { key: "icons", label: "Icons" },
+  { key: "ai", label: "AI" },
+];
+
+const visualBlockLibrary: Array<{
+  key: BlockGalleryCategoryKey;
+  title: string;
+  description: string;
+  cards: VisualBlockCard[];
+}> = [
+  {
+    key: "hero",
+    title: "Hero",
+    description: "Первый экран, оффер и сильное первое впечатление.",
+    cards: [
+      { key: "hero-minimal", title: "Minimal hero", subtitle: "Чистый акцент на результате", type: "HERO", tone: "hero", badge: "Lead" },
+      { key: "hero-split", title: "Split hero", subtitle: "Текст слева, media справа", type: "HERO", tone: "heroSplit", badge: "Media" },
+      { key: "hero-author", title: "Author-led hero", subtitle: "Сильная авторская подача", type: "AUTHOR", tone: "hero", badge: "Trust" },
+      { key: "hero-offer", title: "Offer hero", subtitle: "Оффер + price + CTA", type: "PRICING", tone: "pricing", badge: "Revenue" },
+      { key: "hero-story", title: "Story hero", subtitle: "Редакционная подача в одном блоке", type: "IMAGE_TEXT", tone: "media", badge: "Story" },
+    ],
+  },
+  {
+    key: "trust",
+    title: "Trust",
+    description: "Отзывы, верификация, автор и социальные доказательства.",
+    cards: [
+      { key: "trust-author", title: "Author proof", subtitle: "Блок про автора и опыт", type: "AUTHOR", tone: "trust", badge: "Bio" },
+      { key: "trust-testimonials", title: "Testimonials wall", subtitle: "Отзывы и реальные результаты", type: "TESTIMONIALS", tone: "testimonials", badge: "Social" },
+      { key: "trust-community", title: "Community proof", subtitle: "Сообщество, поддержка, cohort", type: "COMMUNITY", tone: "trust", badge: "Community" },
+      { key: "trust-certificate", title: "Certificate proof", subtitle: "Верификация навыка и сертификат", type: "CERTIFICATE", tone: "trust", badge: "Proof" },
+      { key: "trust-compare", title: "Compare proof", subtitle: "Почему этот курс сильнее альтернатив", type: "COMPARISON", tone: "numbers", badge: "Compare" },
+    ],
+  },
+  {
+    key: "results",
+    title: "Results",
+    description: "Что получит студент, какой outcome соберёт и какие навыки закроет.",
+    cards: [
+      { key: "results-outcomes", title: "Outcomes grid", subtitle: "Карточки результатов и value", type: "OUTCOMES", tone: "numbers", badge: "Outcome" },
+      { key: "results-build", title: "What you'll build", subtitle: "Проектный итог обучения", type: "WHAT_YOU_WILL_BUILD", tone: "curriculum", badge: "Project" },
+      { key: "results-features", title: "Feature stack", subtitle: "Список сильных сторон продукта", type: "FEATURES", tone: "numbers", badge: "Features" },
+      { key: "results-icons", title: "Icon result grid", subtitle: "Иконки, цифры и короткие тезисы", type: "ICON_GRID", tone: "numbers", badge: "Icons" },
+      { key: "results-process", title: "Result journey", subtitle: "Путь от старта к финальному skill", type: "PROCESS", tone: "curriculum", badge: "Journey" },
+    ],
+  },
+  {
+    key: "video",
+    title: "Video / Media",
+    description: "Секции под media-storytelling, уроки и визуальные демонстрации.",
+    cards: [
+      { key: "video-cover", title: "Cover story", subtitle: "Большой media block с narrative текстом", type: "IMAGE_TEXT", tone: "media", badge: "Media" },
+      { key: "video-editorial", title: "Editorial media", subtitle: "Контент и скриншоты под редакционный стиль", type: "CUSTOM_TEXT", tone: "media", badge: "Editorial" },
+      { key: "video-curriculum", title: "Lesson preview", subtitle: "Покажи как выглядит обучение внутри", type: "CURRICULUM", tone: "curriculum", badge: "Preview" },
+      { key: "video-gallery", title: "Visual proof", subtitle: "Скриншоты, кадры, кейсы", type: "WHAT_YOU_WILL_BUILD", tone: "media", badge: "Gallery" },
+      { key: "video-walkthrough", title: "Walkthrough", subtitle: "Пошаговое объяснение через media", type: "PROCESS", tone: "media", badge: "Walkthrough" },
+    ],
+  },
+  {
+    key: "curriculum",
+    title: "Curriculum",
+    description: "Программа курса, модули, шаги и что входит внутрь продукта.",
+    cards: [
+      { key: "curriculum-modules", title: "Module list", subtitle: "Структура модулей и уроков", type: "CURRICULUM", tone: "curriculum", badge: "Modules" },
+      { key: "curriculum-process", title: "Learning path", subtitle: "Путь обучения по шагам", type: "PROCESS", tone: "curriculum", badge: "Path" },
+      { key: "curriculum-audience", title: "Who is this for", subtitle: "Кому подходит программа", type: "WHO_IS_THIS_FOR", tone: "trust", badge: "Audience" },
+      { key: "curriculum-files", title: "Files included", subtitle: "Материалы, шаблоны и бонусы", type: "FILES_INCLUDED", tone: "numbers", badge: "Files" },
+      { key: "curriculum-bonuses", title: "Bonus stack", subtitle: "Дополнительные материалы и плюшки", type: "BONUSES", tone: "numbers", badge: "Bonus" },
+    ],
+  },
+  {
+    key: "pricing",
+    title: "Pricing",
+    description: "Цена, оффер и закрытие возражений перед оплатой.",
+    cards: [
+      { key: "pricing-classic", title: "Classic pricing", subtitle: "Чистая цена и CTA", type: "PRICING", tone: "pricing", badge: "Price" },
+      { key: "pricing-offer", title: "Offer stack", subtitle: "Старая цена, выгода, включено", type: "PRICING", tone: "pricing", badge: "Offer" },
+      { key: "pricing-compare", title: "Compare before buy", subtitle: "Сравнение с обычным курсом", type: "COMPARISON", tone: "numbers", badge: "Compare" },
+      { key: "pricing-close", title: "Closing CTA", subtitle: "Финальный push к оплате", type: "CTA", tone: "cta", badge: "CTA" },
+      { key: "pricing-proof", title: "Price with proof", subtitle: "Цена рядом с доверием и proof", type: "TESTIMONIALS", tone: "testimonials", badge: "Proof" },
+    ],
+  },
+  {
+    key: "faq",
+    title: "FAQ",
+    description: "Ответы на возражения и важные вопросы перед покупкой.",
+    cards: [
+      { key: "faq-clean", title: "Clean FAQ", subtitle: "Классический список вопросов", type: "FAQ", tone: "faq", badge: "FAQ" },
+      { key: "faq-compact", title: "Compact FAQ", subtitle: "Короткие ответы в компактном виде", type: "FAQ", tone: "faq", badge: "Compact" },
+      { key: "faq-proof", title: "FAQ with proof", subtitle: "Возражения плюс доверие", type: "FAQ", tone: "trust", badge: "Proof" },
+      { key: "faq-curriculum", title: "Program FAQ", subtitle: "FAQ про формат и наполнение курса", type: "FAQ", tone: "curriculum", badge: "Program" },
+      { key: "faq-checkout", title: "Checkout FAQ", subtitle: "Оплата, доступ и возвраты", type: "FAQ", tone: "pricing", badge: "Checkout" },
+    ],
+  },
+  {
+    key: "cta",
+    title: "CTA",
+    description: "Финальные призывы к действию, захват внимания и переход к оплате.",
+    cards: [
+      { key: "cta-dark", title: "Dark CTA", subtitle: "Контрастный финальный блок", type: "CTA", tone: "cta", badge: "Dark" },
+      { key: "cta-soft", title: "Soft CTA", subtitle: "Мягкий блок с акцентом на value", type: "CTA", tone: "pricing", badge: "Soft" },
+      { key: "cta-proof", title: "CTA with proof", subtitle: "Призыв к действию рядом с social proof", type: "CTA", tone: "testimonials", badge: "Proof" },
+      { key: "cta-journey", title: "Journey CTA", subtitle: "Призыв после программы и результата", type: "CTA", tone: "curriculum", badge: "Journey" },
+      { key: "cta-minimal", title: "Minimal CTA", subtitle: "Минимальный блок-кнопка", type: "CTA", tone: "cta", badge: "Minimal" },
+    ],
+  },
+];
 
 function reorderIds(list: string[], movingId: string, targetIndex: number) {
   const next = [...list];
@@ -1094,14 +1251,173 @@ function normalizeLegacySalesPageDraft(
   };
 }
 
+function BlockLibraryPreview({ tone }: { tone: BlockPreviewTone }) {
+  if (tone === "hero") {
+    return (
+      <div className="h-32 rounded-[1.4rem] border border-black/8 bg-[radial-gradient(circle_at_top_right,rgba(61,59,255,0.22),transparent_34%),linear-gradient(135deg,#fbfbff_0%,#eef1ff_100%)] p-4">
+        <div className="w-16 rounded-full bg-[#3d3bff]/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#3d3bff]">
+          Hero
+        </div>
+        <div className="mt-4 space-y-2">
+          <div className="h-3 w-4/5 rounded-full bg-black/82" />
+          <div className="h-3 w-3/5 rounded-full bg-black/18" />
+        </div>
+        <div className="mt-5 flex gap-2">
+          <div className="h-9 w-28 rounded-full bg-[#3d3bff]" />
+          <div className="h-9 w-20 rounded-full border border-black/10 bg-white" />
+        </div>
+      </div>
+    );
+  }
+
+  if (tone === "heroSplit") {
+    return (
+      <div className="grid h-32 grid-cols-[1.1fr_0.9fr] gap-3 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        <div className="rounded-[1.2rem] bg-[#f7f8fc] p-3">
+          <div className="h-2.5 w-12 rounded-full bg-[#3d3bff]/18" />
+          <div className="mt-3 space-y-2">
+            <div className="h-3 w-full rounded-full bg-black/80" />
+            <div className="h-3 w-4/5 rounded-full bg-black/16" />
+          </div>
+          <div className="mt-4 h-8 w-24 rounded-full bg-black" />
+        </div>
+        <div className="rounded-[1.2rem] bg-[linear-gradient(135deg,#0f172a_0%,#3d3bff_100%)]" />
+      </div>
+    );
+  }
+
+  if (tone === "trust") {
+    return (
+      <div className="h-32 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        <div className="space-y-2">
+          <div className="h-10 rounded-[1rem] bg-[#f7f8fc]" />
+          <div className="grid grid-cols-2 gap-2">
+            <div className="h-16 rounded-[1rem] bg-[#eef0ff]" />
+            <div className="h-16 rounded-[1rem] bg-[#f7f8fc]" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (tone === "testimonials") {
+    return (
+      <div className="grid h-32 grid-cols-2 gap-2 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        {[0, 1].map((item) => (
+          <div key={item} className="rounded-[1rem] bg-[#f7f8fc] p-3">
+            <div className="h-2.5 w-10 rounded-full bg-[#3d3bff]/18" />
+            <div className="mt-3 space-y-2">
+              <div className="h-2.5 rounded-full bg-black/18" />
+              <div className="h-2.5 w-4/5 rounded-full bg-black/12" />
+              <div className="h-2.5 w-3/5 rounded-full bg-black/12" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (tone === "numbers") {
+    return (
+      <div className="grid h-32 grid-cols-3 gap-2 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        {[0, 1, 2].map((item) => (
+          <div key={item} className="rounded-[1rem] bg-[#f7f8fc] p-3">
+            <div className="h-7 w-7 rounded-2xl bg-[#3d3bff]/12" />
+            <div className="mt-3 h-3 w-3/4 rounded-full bg-black/76" />
+            <div className="mt-2 h-2.5 w-full rounded-full bg-black/12" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (tone === "media") {
+    return (
+      <div className="grid h-32 gap-2 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        <div className="h-16 rounded-[1rem] bg-[linear-gradient(135deg,#dbeafe_0%,#eef2ff_100%)]" />
+        <div className="space-y-2 rounded-[1rem] bg-[#f7f8fc] p-3">
+          <div className="h-2.5 w-3/4 rounded-full bg-black/78" />
+          <div className="h-2.5 w-full rounded-full bg-black/14" />
+        </div>
+      </div>
+    );
+  }
+
+  if (tone === "curriculum") {
+    return (
+      <div className="h-32 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        <div className="space-y-2">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="flex items-center gap-2 rounded-[1rem] bg-[#f7f8fc] px-3 py-2.5">
+              <div className="flex size-7 items-center justify-center rounded-full bg-[#3d3bff]/12 text-[10px] font-semibold text-[#3d3bff]">
+                {item + 1}
+              </div>
+              <div className="h-2.5 flex-1 rounded-full bg-black/14" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (tone === "pricing") {
+    return (
+      <div className="h-32 rounded-[1.4rem] border border-black/8 bg-[linear-gradient(135deg,#0f172a_0%,#111827_100%)] p-4 text-white">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <div className="h-2.5 w-12 rounded-full bg-white/16" />
+            <div className="h-3 w-20 rounded-full bg-white/72" />
+          </div>
+          <div className="rounded-full bg-white/10 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-white/74">
+            Offer
+          </div>
+        </div>
+        <div className="mt-5 h-5 w-24 rounded-full bg-white/90" />
+        <div className="mt-4 h-8 w-full rounded-full bg-[#3d3bff]" />
+      </div>
+    );
+  }
+
+  if (tone === "faq") {
+    return (
+      <div className="h-32 rounded-[1.4rem] border border-black/8 bg-white p-3">
+        <div className="space-y-2">
+          {[0, 1, 2].map((item) => (
+            <div key={item} className="flex items-center justify-between rounded-[1rem] bg-[#f7f8fc] px-3 py-3">
+              <div className="h-2.5 w-3/4 rounded-full bg-black/16" />
+              <div className="h-5 w-5 rounded-full bg-[#3d3bff]/12" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-32 rounded-[1.4rem] border border-black/8 bg-[linear-gradient(135deg,#0f172a_0%,#1e293b_100%)] p-4 text-white">
+      <div className="h-3 w-16 rounded-full bg-white/18" />
+      <div className="mt-4 space-y-2">
+        <div className="h-3 w-4/5 rounded-full bg-white/82" />
+        <div className="h-3 w-2/3 rounded-full bg-white/16" />
+      </div>
+      <div className="mt-5 h-8 w-28 rounded-full bg-[#3d3bff]" />
+    </div>
+  );
+}
+
 export function SalesPageStudio({
   course,
   salesPage,
   analytics,
   moderation,
+  embedded = false,
+  deviceModeOverride,
+  onDirtyChange,
 }: SalesPageStudioProps) {
   const router = useRouter();
-  const [deviceMode, setDeviceMode] = useState<SalesPageDeviceMode>("desktop");
+  const [localDeviceMode, setLocalDeviceMode] = useState<SalesPageDeviceMode>(
+    deviceModeOverride ?? "desktop",
+  );
   const normalizedIncomingPage = useMemo(
     () => normalizeLegacySalesPageDraft(salesPage),
     [salesPage],
@@ -1110,6 +1426,11 @@ export function SalesPageStudio({
   const [savedSnapshot, setSavedSnapshot] = useState(
     JSON.stringify(normalizedIncomingPage),
   );
+  const [sidebarTab, setSidebarTab] = useState<BuilderSidebarTab>("blocks");
+  const [inspectorTab, setInspectorTab] = useState<InspectorTab>("content");
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [activeLibraryCategory, setActiveLibraryCategory] =
+    useState<BlockGalleryCategoryKey>("hero");
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(
     normalizedIncomingPage?.blocks[0]?.id ?? null,
   );
@@ -1157,6 +1478,19 @@ export function SalesPageStudio({
     () => JSON.stringify(page) !== savedSnapshot,
     [page, savedSnapshot],
   );
+  const deviceMode = deviceModeOverride ?? localDeviceMode;
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  const updateDeviceMode = (nextMode: SalesPageDeviceMode) => {
+    if (deviceModeOverride) {
+      return;
+    }
+
+    setLocalDeviceMode(nextMode);
+  };
 
   const pageTheme = page?.theme ?? getDefaultSalesPageTheme();
   const activeKit =
@@ -1172,6 +1506,21 @@ export function SalesPageStudio({
     : null;
 
   const normalizedBlockQuery = deferredBlockQuery.trim().toLowerCase();
+  const visibleLibraryCategories = useMemo(() => {
+    return visualBlockLibrary
+      .map((category) => ({
+        ...category,
+        cards: category.cards.filter((card) => {
+          const haystack = `${card.title} ${card.subtitle} ${card.type} ${card.badge ?? ""}`.toLowerCase();
+          return !normalizedBlockQuery || haystack.includes(normalizedBlockQuery);
+        }),
+      }))
+      .filter((category) => category.cards.length > 0);
+  }, [normalizedBlockQuery]);
+  const activeLibrary =
+    visibleLibraryCategories.find((category) => category.key === activeLibraryCategory) ??
+    visibleLibraryCategories[0] ??
+    null;
   const visibleMarketplaceGroups = useMemo(() => {
     return salesPageBlockGroups
       .map((group) => ({
@@ -1209,6 +1558,12 @@ export function SalesPageStudio({
       return matchesView && matchesQuery;
     });
   }, [marketplaceView, normalizedBlockQuery]);
+
+  useEffect(() => {
+    if (!activeLibrary && visibleLibraryCategories[0]) {
+      setActiveLibraryCategory(visibleLibraryCategories[0].key);
+    }
+  }, [activeLibrary, visibleLibraryCategories]);
 
   const setSuccess = (message: string) =>
     setFeedback({ tone: "success", message });
@@ -1352,10 +1707,11 @@ export function SalesPageStudio({
   const handleCreateBlock = (
     type: SalesPageBlockDraft["type"],
     afterBlockId?: string | null,
+    position: "before" | "after" = "after",
   ) =>
     runMutation(
-      afterBlockId ? `add-block-inline-${type}` : `add-block-${type}`,
-      async () => createSalesPageBlock(course.id, type, afterBlockId),
+      afterBlockId ? `add-block-inline-${position}-${type}` : `add-block-${position}-${type}`,
+      async () => createSalesPageBlock(course.id, type, afterBlockId, position),
     );
 
   const handleCreateKit = (
@@ -1513,10 +1869,11 @@ export function SalesPageStudio({
         onConfirm={handleConfirmDeleteSection}
       />
 
-      <PremiumCard
-        padding="lg"
-        className="rounded-[2.6rem] bg-white/92 backdrop-blur-xl"
-      >
+      {!embedded ? (
+        <PremiumCard
+          padding="lg"
+          className="rounded-[2.6rem] bg-white/92 backdrop-blur-xl"
+        >
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
@@ -1554,10 +1911,22 @@ export function SalesPageStudio({
                     ? "bg-white text-black shadow-sm"
                     : "text-black/48"
                 }`}
-                onClick={() => setDeviceMode("desktop")}
+                onClick={() => updateDeviceMode("desktop")}
               >
                 <Laptop2 className="size-4" />
                 Десктоп
+              </button>
+              <button
+                type="button"
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition ${
+                  deviceMode === "tablet"
+                    ? "bg-white text-black shadow-sm"
+                    : "text-black/48"
+                }`}
+                onClick={() => updateDeviceMode("tablet")}
+              >
+                <TabletSmartphone className="size-4" />
+                Планшет
               </button>
               <button
                 type="button"
@@ -1566,7 +1935,7 @@ export function SalesPageStudio({
                     ? "bg-white text-black shadow-sm"
                     : "text-black/48"
                 }`}
-                onClick={() => setDeviceMode("mobile")}
+                onClick={() => updateDeviceMode("mobile")}
               >
                 <MonitorSmartphone className="size-4" />
                 Мобильная
@@ -1657,14 +2026,183 @@ export function SalesPageStudio({
             </PremiumButton>
           </div>
         </div>
-      </PremiumCard>
+        </PremiumCard>
+      ) : null}
 
       {feedback ? (
         <FeedbackCard message={feedback.message} tone={feedback.tone} />
       ) : null}
 
+      {isLibraryOpen ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/54 px-4 py-6 backdrop-blur-sm">
+          <div className="max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-[2rem] border border-white/14 bg-[#f6f7fb] shadow-[0_32px_90px_rgba(15,23,42,0.28)]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-black/8 bg-white/92 px-6 py-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.24em] text-black/34">
+                  Block Library
+                </p>
+                <p className="mt-2 text-2xl font-semibold tracking-tight text-black">
+                  Visual site sections
+                </p>
+                <p className="mt-2 text-sm leading-6 text-black/48">
+                  Выбирай визуальный паттерн, а затем добавляй блок сразу в холст.
+                </p>
+              </div>
+              <PremiumButton
+                type="button"
+                tone="secondary"
+                className="h-11 px-4"
+                onClick={() => setIsLibraryOpen(false)}
+              >
+                Закрыть библиотеку
+              </PremiumButton>
+            </div>
+
+            <div className="grid max-h-[calc(92vh-108px)] gap-0 overflow-hidden lg:grid-cols-[240px_minmax(0,1fr)]">
+              <div className="border-b border-black/8 bg-white px-5 py-5 lg:border-b-0 lg:border-r">
+                <div className="rounded-[1.2rem] border border-black/8 bg-[#f7f8fc] px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Search className="size-4 text-black/36" />
+                    <input
+                      value={blockQuery}
+                      onChange={(event) => setBlockQuery(event.target.value)}
+                      placeholder="Найти hero, pricing, faq..."
+                      className="h-10 w-full bg-transparent text-sm text-black outline-none placeholder:text-black/34"
+                    />
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-2">
+                  {visibleLibraryCategories.map((category) => {
+                    const active = activeLibraryCategory === category.key;
+
+                    return (
+                      <button
+                        key={category.key}
+                        type="button"
+                        onClick={() => setActiveLibraryCategory(category.key)}
+                        className={`w-full rounded-[1.2rem] border px-4 py-3 text-left transition ${
+                          active
+                            ? "border-[#3d3bff]/28 bg-[#eef0ff]"
+                            : "border-black/8 bg-white hover:border-black/14 hover:bg-[#fafbff]"
+                        }`}
+                      >
+                        <p className="text-sm font-medium text-black">{category.title}</p>
+                        <p className="mt-1 text-sm leading-6 text-black/46">
+                          {category.cards.length} вариантов
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="overflow-y-auto px-6 py-5">
+                {activeLibrary ? (
+                  <div>
+                    <div className="flex flex-wrap items-end justify-between gap-4">
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.22em] text-black/34">
+                          {activeLibrary.title}
+                        </p>
+                        <p className="mt-2 text-lg font-semibold tracking-tight text-black">
+                          {activeLibrary.description}
+                        </p>
+                      </div>
+                      <Badge variant="subtle">{activeLibrary.cards.length} вариантов</Badge>
+                    </div>
+
+                    <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {activeLibrary.cards.map((card) => (
+                        <div
+                          key={card.key}
+                          className="rounded-[1.6rem] border border-black/8 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.04)]"
+                        >
+                          <BlockLibraryPreview tone={card.tone} />
+                          <div className="mt-4 flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-medium text-black">{card.title}</p>
+                              <p className="mt-2 text-sm leading-6 text-black/48">
+                                {card.subtitle}
+                              </p>
+                            </div>
+                            {card.badge ? (
+                              <Badge variant="subtle">{card.badge}</Badge>
+                            ) : null}
+                          </div>
+                          <div className="mt-4 flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs uppercase tracking-[0.18em] text-black/34">
+                                {getSalesPageBlockLabel(card.type)}
+                              </p>
+                              <p className="mt-1 text-xs text-black/42">
+                                {selectedBlock
+                                  ? `После "${getSalesPageBlockDisplayTitle(selectedBlock)}"`
+                                  : "В конец страницы"}
+                              </p>
+                            </div>
+                            <PremiumButton
+                              type="button"
+                              className="h-10 px-4"
+                              disabled={Boolean(pendingAction?.startsWith("add-block"))}
+                              onClick={() => {
+                                setNewBlockType(card.type);
+                                void handleCreateBlock(card.type, selectedBlockId);
+                                setIsLibraryOpen(false);
+                              }}
+                            >
+                              <Plus className="mr-2 size-4" />
+                              Add
+                            </PremiumButton>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <FeedbackCard message="Ничего не найдено. Попробуй другой запрос." />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid gap-6 xl:grid-cols-[300px_minmax(0,1fr)_360px]">
         <div className="space-y-5">
+          <PremiumCard
+            padding="lg"
+            className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
+          >
+            <p className="text-xs uppercase tracking-[0.24em] text-black/32">
+              Builder sidebar
+            </p>
+            <div className="mt-4 grid gap-2">
+              {builderSidebarTabs.map((tab) => {
+                const active = sidebarTab === tab.key;
+                const Icon = tab.icon;
+
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setSidebarTab(tab.key)}
+                    className={`flex items-center gap-3 rounded-[1.25rem] border px-4 py-3 text-left text-sm transition ${
+                      active
+                        ? "border-[#3d3bff]/28 bg-[#eef0ff] text-[#3d3bff]"
+                        : "border-black/8 bg-white text-black/58 hover:border-black/14 hover:text-black"
+                    }`}
+                  >
+                    <Icon className="size-4" />
+                    <span className="font-medium">{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </PremiumCard>
+
+          {sidebarTab === "blocks" ? (
+            <>
           <PremiumCard
             padding="lg"
             className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
@@ -1765,6 +2303,79 @@ export function SalesPageStudio({
                     </button>
                   );
                 })}
+              </div>
+
+              <div className="rounded-[1.6rem] border border-black/8 bg-[#fbfcff] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-black">
+                      Visual block library
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-black/48">
+                      Секции с быстрыми thumbnails в логике site builder.
+                    </p>
+                  </div>
+                  <PremiumButton
+                    type="button"
+                    tone="secondary"
+                    className="h-10 px-4"
+                    onClick={() => setIsLibraryOpen(true)}
+                  >
+                    <Eye className="mr-2 size-4" />
+                    Открыть
+                  </PremiumButton>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {visibleLibraryCategories.map((category) => {
+                    const active = activeLibraryCategory === category.key;
+
+                    return (
+                      <button
+                        key={category.key}
+                        type="button"
+                        onClick={() => setActiveLibraryCategory(category.key)}
+                        className={`rounded-full border px-3 py-2 text-xs uppercase tracking-[0.18em] transition ${
+                          active
+                            ? "border-[#3d3bff]/30 bg-[#eef0ff] text-[#3d3bff]"
+                            : "border-black/8 bg-white text-black/54 hover:border-black/14 hover:text-black"
+                        }`}
+                      >
+                        {category.title}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {activeLibrary ? (
+                  <div className="mt-4 grid gap-3">
+                    {activeLibrary.cards.slice(0, 3).map((card) => (
+                      <button
+                        key={card.key}
+                        type="button"
+                        onClick={() => setNewBlockType(card.type)}
+                        className={`rounded-[1.4rem] border p-3 text-left transition ${
+                          newBlockType === card.type
+                            ? "border-[#3d3bff]/30 bg-[#eef0ff]"
+                            : "border-black/8 bg-white hover:border-black/14 hover:bg-[#fafbff]"
+                        }`}
+                      >
+                        <BlockLibraryPreview tone={card.tone} />
+                        <div className="mt-3 flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-medium text-black">{card.title}</p>
+                            <p className="mt-2 text-sm leading-6 text-black/48">
+                              {card.subtitle}
+                            </p>
+                          </div>
+                          {card.badge ? (
+                            <Badge variant="subtle">{card.badge}</Badge>
+                          ) : null}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
@@ -2089,16 +2700,30 @@ export function SalesPageStudio({
                         </div>
                       </div>
                     ) : (
-                      <PremiumButton
-                        type="button"
-                        tone="secondary"
-                        className="mt-3 h-10 w-full px-4"
-                        disabled={Boolean(pendingAction?.startsWith("add-block-inline"))}
-                        onClick={() => handleCreateBlock(newBlockType, block.id)}
-                      >
-                        <Plus className="mr-2 size-4" />
-                        Вставить ниже
-                      </PremiumButton>
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        <PremiumButton
+                          type="button"
+                          tone="secondary"
+                          className="h-10 w-full px-4"
+                          disabled={Boolean(pendingAction?.startsWith("add-block-inline"))}
+                          onClick={() =>
+                            handleCreateBlock(newBlockType, block.id, "before")
+                          }
+                        >
+                          <Plus className="mr-2 size-4" />
+                          Вставить выше
+                        </PremiumButton>
+                        <PremiumButton
+                          type="button"
+                          tone="secondary"
+                          className="h-10 w-full px-4"
+                          disabled={Boolean(pendingAction?.startsWith("add-block-inline"))}
+                          onClick={() => handleCreateBlock(newBlockType, block.id)}
+                        >
+                          <Plus className="mr-2 size-4" />
+                          Вставить ниже
+                        </PremiumButton>
+                      </div>
                     )}
                   </div>
                     );
@@ -2142,6 +2767,387 @@ export function SalesPageStudio({
               </div>
             </div>
           </PremiumCard>
+            </>
+          ) : null}
+
+          {sidebarTab === "layers" ? (
+            <PremiumCard
+              padding="lg"
+              className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.24em] text-black/32">
+                    Layers
+                  </p>
+                  <p className="mt-2 text-lg font-semibold tracking-tight text-black">
+                    Структура страницы
+                  </p>
+                </div>
+                <Badge variant="subtle">{page?.blocks.length ?? 0}</Badge>
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {page?.blocks.map((block, index) => (
+                  <div
+                    key={block.id}
+                    className={`rounded-[1.35rem] border p-4 transition ${
+                      selectedBlockId === block.id
+                        ? "border-[#3d3bff]/28 bg-[#eef0ff]"
+                        : "border-black/8 bg-[#fafbff]"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="w-full text-left"
+                      onClick={() => setSelectedBlockId(block.id)}
+                    >
+                      <p className="text-sm font-medium text-black">
+                        {index + 1}. {getSalesPageBlockDisplayTitle(block)}
+                      </p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-black/36">
+                        {getSalesPageBlockLabel(block.type)}
+                      </p>
+                    </button>
+
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      <PremiumButton
+                        type="button"
+                        tone="secondary"
+                        className="h-10 w-full px-4"
+                        onClick={() =>
+                          runMutation("move-up", async () =>
+                            moveSalesPageBlock(block.id, "up"),
+                          )
+                        }
+                      >
+                        <ArrowUp className="mr-2 size-4" />
+                        Вверх
+                      </PremiumButton>
+                      <PremiumButton
+                        type="button"
+                        tone="secondary"
+                        className="h-10 w-full px-4"
+                        onClick={() =>
+                          runMutation("move-down", async () =>
+                            moveSalesPageBlock(block.id, "down"),
+                          )
+                        }
+                      >
+                        <ArrowDown className="mr-2 size-4" />
+                        Вниз
+                      </PremiumButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </PremiumCard>
+          ) : null}
+
+          {sidebarTab === "page-settings" ? (
+            <PremiumCard
+              padding="lg"
+              className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
+            >
+              <p className="text-xs uppercase tracking-[0.24em] text-black/32">
+                Page settings
+              </p>
+              <div className="mt-5 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-black">Название страницы</label>
+                  <input
+                    value={page?.title ?? ""}
+                    onChange={(event) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              title: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    className="premium-control"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-black">SEO-заголовок</label>
+                  <input
+                    value={page?.metaTitle ?? ""}
+                    onChange={(event) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              metaTitle: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    className="premium-control"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-black">SEO-описание</label>
+                  <textarea
+                    value={page?.metaDescription ?? ""}
+                    onChange={(event) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              metaDescription: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    rows={4}
+                    className="premium-textarea"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-black">OG-изображение</label>
+                  <input
+                    value={page?.ogImage ?? ""}
+                    onChange={(event) =>
+                      setPage((current) =>
+                        current
+                          ? {
+                              ...current,
+                              ogImage: event.target.value,
+                            }
+                          : current,
+                      )
+                    }
+                    className="premium-control"
+                  />
+                </div>
+                <PremiumButton
+                  type="button"
+                  className="h-11 w-full"
+                  disabled={pendingAction === "save-meta" || !page}
+                  onClick={handleSaveMeta}
+                >
+                  {pendingAction === "save-meta" ? (
+                    <LoaderCircle className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="mr-2 size-4" />
+                  )}
+                  Сохранить настройки страницы
+                </PremiumButton>
+              </div>
+            </PremiumCard>
+          ) : null}
+
+          {sidebarTab === "theme" ? (
+            <PremiumCard
+              padding="lg"
+              className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
+            >
+              <p className="text-xs uppercase tracking-[0.24em] text-black/32">
+                Theme
+              </p>
+              <div className="mt-5 space-y-4">
+                <div className="grid gap-2">
+                  {salesPageThemePresets.map((preset) => (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      onClick={() =>
+                        setPage((current) =>
+                          current
+                            ? {
+                                ...current,
+                                theme: preset.theme,
+                              }
+                            : current,
+                        )
+                      }
+                      className={`rounded-[1.25rem] border px-4 py-4 text-left transition ${
+                        page?.theme.accent === preset.theme.accent
+                          ? "border-[#3d3bff]/30 bg-[#eef0ff]"
+                          : "border-black/8 bg-white hover:border-black/14 hover:bg-[#fbfbff]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="size-4 rounded-full border border-black/8"
+                          style={{ backgroundColor: preset.theme.accent }}
+                        />
+                        <span className="text-sm font-medium text-black">
+                          {preset.label}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                <ColorField
+                  label="Акцент"
+                  value={page?.theme.accent ?? "#3d3bff"}
+                  onChange={(value) =>
+                    setPage((current) =>
+                      current
+                        ? {
+                            ...current,
+                            theme: {
+                              ...current.theme,
+                              accent: value,
+                              accentSoft: hexToRgba(value, 0.12),
+                            },
+                          }
+                        : current,
+                    )
+                  }
+                />
+                <ColorField
+                  label="Фон"
+                  value={page?.theme.background ?? "#f6f7fb"}
+                  onChange={(value) =>
+                    setPage((current) =>
+                      current
+                        ? {
+                            ...current,
+                            theme: {
+                              ...current.theme,
+                              background: value,
+                            },
+                          }
+                        : current,
+                    )
+                  }
+                />
+                <ColorField
+                  label="Поверхность"
+                  value={page?.theme.surface ?? "#ffffff"}
+                  onChange={(value) =>
+                    setPage((current) =>
+                      current
+                        ? {
+                            ...current,
+                            theme: {
+                              ...current.theme,
+                              surface: value,
+                            },
+                          }
+                        : current,
+                    )
+                  }
+                />
+                <ColorField
+                  label="Текст"
+                  value={page?.theme.text ?? "#05070b"}
+                  onChange={(value) =>
+                    setPage((current) =>
+                      current
+                        ? {
+                            ...current,
+                            theme: {
+                              ...current.theme,
+                              text: value,
+                            },
+                          }
+                        : current,
+                    )
+                  }
+                />
+              </div>
+            </PremiumCard>
+          ) : null}
+
+          {sidebarTab === "ai" ? (
+            <div className="space-y-5">
+              <PremiumCard
+                padding="lg"
+                className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.24em] text-black/32">
+                      AI optimizer
+                    </p>
+                    <p className="mt-2 text-lg font-semibold tracking-tight text-black">
+                      Подсказки по странице
+                    </p>
+                  </div>
+                  <Badge variant="subtle">{suggestions.length}</Badge>
+                </div>
+                <PremiumButton
+                  type="button"
+                  className="mt-5 h-11 w-full"
+                  disabled={pendingAction === "ai-page" || !page}
+                  onClick={() => {
+                    if (!page) {
+                      return;
+                    }
+
+                    setPendingAction("ai-page");
+                    setFeedback(null);
+
+                    startTransition(async () => {
+                      const result = await getSalesPageSuggestions(course.id);
+
+                      if (!result.success) {
+                        setError(result.message);
+                        setPendingAction(null);
+                        return;
+                      }
+
+                      setSuggestions(result.data?.suggestions ?? []);
+                      setSuccess(result.message);
+                      setPendingAction(null);
+                    });
+                  }}
+                >
+                  {pendingAction === "ai-page" ? (
+                    <LoaderCircle className="mr-2 size-4 animate-spin" />
+                  ) : (
+                    <WandSparkles className="mr-2 size-4" />
+                  )}
+                  Запустить AI-анализ
+                </PremiumButton>
+
+                <div className="mt-5 space-y-3">
+                  {suggestions.length ? (
+                    suggestions.slice(0, 3).map((suggestion) => (
+                      <div
+                        key={suggestion.id}
+                        className="rounded-[1.4rem] border border-black/8 bg-[#fafbff] p-4"
+                      >
+                        <p className="text-sm font-medium text-black">
+                          {suggestion.problem}
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-black/48">
+                          {suggestion.whyItMatters}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <FeedbackCard message="AI-подсказки появятся после запуска анализа страницы." />
+                  )}
+                </div>
+              </PremiumCard>
+
+              <PremiumCard
+                padding="lg"
+                className="rounded-[2.2rem] border-black/6 bg-black text-white"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex size-11 items-center justify-center rounded-2xl bg-white/10">
+                    <FileWarning className="size-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white">Юридическая подсказка</p>
+                    <p className="mt-3 text-sm leading-7 text-white/66">
+                      Не обещайте гарантированный доход, трудоустройство или
+                      результат без усилий. Пишите честно: чему научится человек,
+                      какой проект соберет и какие материалы получит.
+                    </p>
+                  </div>
+                </div>
+              </PremiumCard>
+            </div>
+          ) : null}
         </div>
 
         <PremiumCard
@@ -2154,7 +3160,11 @@ export function SalesPageStudio({
                 Предпросмотр на холсте
               </p>
               <p className="mt-2 text-lg font-semibold tracking-tight text-black">
-                {deviceMode === "desktop" ? "Десктопный холст" : "Мобильный холст"}
+                {deviceMode === "desktop"
+                  ? "Десктопный холст"
+                  : deviceMode === "tablet"
+                    ? "Планшетный холст"
+                    : "Мобильный холст"}
               </p>
               <p className="mt-2 text-sm leading-6 text-black/46">
                 Активный набор секций: {activeKit?.title ?? "Стартовый набор"}.
@@ -2187,6 +3197,8 @@ export function SalesPageStudio({
                 runMutation("duplicate", async () =>
                   duplicateSalesPageBlock(blockId),
                 ),
+              onAddBefore: (blockId) =>
+                handleCreateBlock(newBlockType, blockId, "before"),
               onAddAfter: (blockId) => handleCreateBlock(newBlockType, blockId),
               onAddSectionAbove: (blockId) =>
                 handleCreateKit(activeKit, {
@@ -2228,6 +3240,46 @@ export function SalesPageStudio({
         </PremiumCard>
 
         <div className="space-y-5">
+          <PremiumCard
+            padding="lg"
+            className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"
+          >
+            <p className="text-xs uppercase tracking-[0.24em] text-black/32">
+              Inspector
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {inspectorTabs.map((tab) => {
+                const active = inspectorTab === tab.key;
+
+                return (
+                  <button
+                    key={tab.key}
+                    type="button"
+                    onClick={() => setInspectorTab(tab.key)}
+                    className={`rounded-full border px-4 py-2 text-sm transition ${
+                      active
+                        ? "border-[#3d3bff]/30 bg-[#eef0ff] text-[#3d3bff]"
+                        : "border-black/8 bg-white text-black/58 hover:border-black/14 hover:text-black"
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-4 text-sm leading-6 text-black/48">
+              {inspectorTab === "content"
+                ? "Редактируй заголовки, текст, FAQ, links и структуру контента выбранного блока."
+                : inspectorTab === "design"
+                  ? "Фокус на section group, style presets, colors и layout."
+                  : inspectorTab === "media"
+                    ? "Здесь обычно настраиваются cover image, screenshots и media-fit."
+                    : inspectorTab === "icons"
+                      ? "Подходящий режим для icon grid и item blocks с иконками."
+                      : "Используй AI improve и reset, когда нужно быстро усилить блок."}
+            </p>
+          </PremiumCard>
+
           <PremiumCard
             padding="lg"
             className="rounded-[2.2rem] bg-white/92 backdrop-blur-xl"

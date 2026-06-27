@@ -1,31 +1,39 @@
 import { notFound, redirect } from "next/navigation";
-import { CourseStudioSectionPage } from "@/components/author/course-studio-sections";
-import { normalizeCourseStudioSection } from "@/lib/course-studio";
+import { CreativeStudio } from "@/components/author/creative-studio";
 import { requireUserRole } from "@/server/auth/session";
 import { getAuthorCourseBuilderData } from "@/server/author/queries";
 import { getCourseStudioData } from "@/server/sales-page/queries";
 
-type CourseStudioSectionRouteProps = {
-  params: Promise<{ id: string; section: string }>;
+type CreativeStudioRouteProps = {
+  params: Promise<{ id: string }>;
+  searchParams?: Promise<{ tab?: string }>;
 };
 
-export default async function CourseStudioSectionRoute({
+function normalizeCreativeStudioTab(value: string | undefined) {
+  switch (value) {
+    case "course-card":
+    case "sales-page":
+    case "course-studio":
+    case "ai-assistant":
+    case "analytics":
+      return value;
+    default:
+      return "course-card";
+  }
+}
+
+export default async function CreativeStudioRoute({
   params,
-}: CourseStudioSectionRouteProps) {
-  const { id, section } = await params;
-  const activeSection = normalizeCourseStudioSection(section);
-
-  if (!activeSection) {
-    notFound();
-  }
-
-  if (activeSection === "creative-site") {
-    redirect(`/author/courses/${id}/creative-studio`);
-  }
+  searchParams,
+}: CreativeStudioRouteProps) {
+  const [{ id }, resolvedSearchParams] = await Promise.all([
+    params,
+    searchParams ?? Promise.resolve<{ tab?: string }>({}),
+  ]);
 
   const session = await requireUserRole(
     ["AUTHOR", "ADMIN"],
-    `/author/courses/${id}/studio/${activeSection}`,
+    `/author/courses/${id}/creative-studio`,
   );
 
   const [studioResult, builderResult] = await Promise.all([
@@ -48,10 +56,10 @@ export default async function CourseStudioSectionRoute({
   }
 
   return (
-    <CourseStudioSectionPage
-      section={activeSection}
+    <CreativeStudio
       studio={studioResult.data}
       builderCourse={builderResult.course}
+      initialTab={normalizeCreativeStudioTab(resolvedSearchParams.tab)}
     />
   );
 }

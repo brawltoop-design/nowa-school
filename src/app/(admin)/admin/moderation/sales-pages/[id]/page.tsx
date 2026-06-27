@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Laptop2, MonitorSmartphone } from "lucide-react";
 import { CourseSalesPageRenderer } from "@/components/sales-page/course-sales-page-renderer";
 import { Breadcrumbs } from "@/components/premium/breadcrumbs";
 import { PremiumButton } from "@/components/premium/premium-button";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { SectionHeader } from "@/components/premium/section-header";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import {
   approveSalesPageSubmission,
@@ -15,12 +17,15 @@ import { getAdminModerationDetail } from "@/server/sales-page/queries";
 
 type AdminSalesPageModerationDetailProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ preview?: string }>;
 };
 
 export default async function AdminSalesPageModerationDetail({
   params,
+  searchParams,
 }: AdminSalesPageModerationDetailProps) {
   const { id } = await params;
+  const query = await searchParams;
   const data = await getAdminModerationDetail(id);
 
   if (!data) {
@@ -28,6 +33,8 @@ export default async function AdminSalesPageModerationDetail({
   }
 
   const detail = data;
+  const previewMode = query.preview === "mobile" ? "mobile" : "desktop";
+  const isMobilePreview = previewMode === "mobile";
 
   async function approveAction() {
     "use server";
@@ -69,13 +76,46 @@ export default async function AdminSalesPageModerationDetail({
           <SectionHeader
             eyebrow="Предпросмотр"
             title="Проверка продающей страницы"
-            description="Полный просмотр страницы курса перед одобрением или отклонением."
+            description="Переключай desktop и mobile режим, чтобы проверить подачу курса перед одобрением или отклонением."
           />
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex items-center rounded-full border border-black/8 bg-[#f5f6fb] p-1">
+              <Link
+                href={`/admin/moderation/sales-pages/${detail.salesPage.id}?preview=desktop`}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition",
+                  !isMobilePreview
+                    ? "bg-white text-black shadow-sm"
+                    : "text-black/48",
+                )}
+              >
+                <Laptop2 className="size-4" />
+                Десктоп
+              </Link>
+              <Link
+                href={`/admin/moderation/sales-pages/${detail.salesPage.id}?preview=mobile`}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm transition",
+                  isMobilePreview
+                    ? "bg-white text-black shadow-sm"
+                    : "text-black/48",
+                )}
+              >
+                <MonitorSmartphone className="size-4" />
+                Мобильная
+              </Link>
+            </div>
+
+            <Badge variant="subtle">
+              {isMobilePreview ? "Проверка: мобильная" : "Проверка: десктоп"}
+            </Badge>
+          </div>
           <div className="mt-6">
             <CourseSalesPageRenderer
               course={detail.course}
               salesPage={detail.salesPage}
               mode="admin"
+              deviceMode={previewMode}
               primaryHref={`/checkout/mock?course=${encodeURIComponent(detail.course.slug)}`}
               secondaryHref={`/courses/${detail.course.slug}`}
             />

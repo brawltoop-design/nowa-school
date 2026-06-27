@@ -12,6 +12,30 @@ export const salesPageThemeSchema = z.object({
   background: z.string().min(1),
   surface: z.string().min(1),
   text: z.string().min(1),
+  courseCard: z
+    .object({
+      shortDescription: z.string().optional(),
+      oldPrice: z.number().nullable().optional(),
+      authorName: z.string().optional(),
+      badges: z.array(z.string()).optional(),
+      duration: z.string().optional(),
+      lessonsCount: z.number().nullable().optional(),
+      accentColor: z.string().optional(),
+      cardStyle: z.enum(["editorial", "spotlight", "compact"]).optional(),
+    })
+    .optional(),
+  footerSocials: z
+    .object({
+      telegram: z.string().optional(),
+      instagram: z.string().optional(),
+      youtube: z.string().optional(),
+      tiktok: z.string().optional(),
+      vk: z.string().optional(),
+      website: z.string().optional(),
+      email: z.string().optional(),
+      community: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const salesPageMetaSchema = z.object({

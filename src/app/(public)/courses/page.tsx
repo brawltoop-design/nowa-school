@@ -231,8 +231,19 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
 
   return (
     <div className="pb-20">
-      <AnimatedSection className="bg-black pb-10 text-white sm:pb-12">
-        <div className="app-shell pt-6 sm:pt-8 lg:pt-10">
+      <AnimatedSection className="relative isolate overflow-hidden bg-black pb-10 text-white sm:pb-12">
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-[linear-gradient(135deg,#030712_0%,#081120_26%,#0d2340_58%,#07111f_100%)]" />
+          <div className="hero-orb hero-orb-a left-[-9rem] top-[-7rem] h-[24rem] w-[24rem] bg-[#4f46e5]/28" />
+          <div className="hero-orb hero-orb-b right-[-10rem] top-[2rem] h-[28rem] w-[28rem] bg-[#2563eb]/24" />
+          <div className="hero-orb hero-orb-c bottom-[-9rem] left-[18%] h-[22rem] w-[22rem] bg-[#06b6d4]/16" />
+          <div className="hero-orb hero-orb-d bottom-[-8rem] right-[12%] h-[18rem] w-[18rem] bg-[#8b5cf6]/22" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(125,211,252,0.14),transparent_16%),radial-gradient(circle_at_68%_18%,rgba(99,102,241,0.18),transparent_18%),radial-gradient(circle_at_44%_72%,rgba(14,165,233,0.12),transparent_18%)]" />
+          <div className="hero-grid absolute inset-0 opacity-[0.08]" />
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0.26)_0%,rgba(2,6,23,0.54)_38%,rgba(2,6,23,0.86)_100%)]" />
+        </div>
+
+        <div className="app-shell relative z-10 pt-6 sm:pt-8 lg:pt-10">
           <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_320px] md:items-start xl:grid-cols-[minmax(0,1fr)_360px]">
             <div>
               <div className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/6 px-4 py-2 text-sm font-medium text-white/86">
@@ -677,6 +688,11 @@ export default async function CoursesPage({ searchParams }: CoursesPageProps) {
                 category={course.category}
                 level={course.level}
                 lessonCount={course.lessonCount}
+                heroBadges={course.heroBadges}
+                oldPrice={course.oldPrice}
+                accentColor={course.accentColor}
+                cardStyle={course.cardStyle}
+                durationLabel={course.durationLabel}
                 aiEnhanced={course.aiEnhanced}
                 studentCount={course.studentCount}
                 averageRating={course.averageRating}

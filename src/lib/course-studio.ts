@@ -80,6 +80,10 @@ export function getCourseStudioPath(
   courseId: string,
   section: CourseStudioSectionKey,
 ) {
+  if (section === "creative-site") {
+    return `/author/courses/${courseId}/creative-studio`;
+  }
+
   return `/author/courses/${courseId}/studio/${section}`;
 }
 

@@ -79,7 +79,7 @@ export function CourseCreateForm() {
       }
 
       window.location.assign(
-        `/author/courses/${result.data?.courseId}/studio/overview`,
+        `/author/courses/${result.data?.courseId}/creative-studio`,
       );
     });
   });

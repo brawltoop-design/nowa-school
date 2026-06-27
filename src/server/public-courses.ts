@@ -37,6 +37,10 @@ export type PublicCourseCardData = {
   averageRating: number | null;
   salesPageStatus: SalesPageStatus | null;
   heroBadges: string[];
+  oldPrice: number | null;
+  accentColor: string | null;
+  cardStyle: "editorial" | "spotlight" | "compact" | null;
+  durationLabel: string | null;
 };
 
 export type PublicCourseDetail = {
@@ -483,6 +487,10 @@ function mapFallbackCourseToCard(course: PublicCourseDetail): PublicCourseCardDa
     averageRating: course.metrics.averageRating,
     salesPageStatus: null,
     heroBadges: course.badges.slice(0, 2).map((badge) => badge.title),
+    oldPrice: null,
+    accentColor: null,
+    cardStyle: null,
+    durationLabel: null,
   };
 }
 
@@ -778,6 +786,7 @@ export async function getPublishedCourses(filters: CourseCatalogFilters) {
   const mappedCourses: PublicCourseCardData[] = courses.map((course) => {
     const salesPage = course.salesPage ? mapSalesPage(course.salesPage) : null;
     const hero = salesPage ? extractSalesPageHero(salesPage.blocks) : null;
+    const courseCard = salesPage?.theme.courseCard;
     const lessonCount = course.modules.reduce(
       (sum, module) => sum + module._count.lessons,
       0,
@@ -790,21 +799,27 @@ export async function getPublishedCourses(filters: CourseCatalogFilters) {
     return {
       id: course.id,
       slug: course.slug,
-      title: hero?.headline || course.title,
-      description: hero?.subheadline || course.description,
+      title: course.title,
+      description:
+        courseCard?.shortDescription || hero?.subheadline || course.description,
       category: course.category,
       level: course.level,
       coverUrl: hero?.coverImage || course.coverUrl,
       price: Number(course.price),
       currency: course.currency,
       aiEnhanced: course.aiEnhanced,
-      authorName: course.author.name,
-      lessonCount,
+      authorName: courseCard?.authorName || course.author.name,
+      lessonCount: courseCard?.lessonsCount ?? lessonCount,
       studentCount: course.enrollments.length,
       reviewCount: course.reviews.length,
       averageRating: reviewAverage,
       salesPageStatus: course.salesPage?.status ?? null,
-      heroBadges: hero?.badges ?? [],
+      heroBadges:
+        courseCard?.badges?.length ? courseCard.badges : (hero?.badges ?? []),
+      oldPrice: courseCard?.oldPrice ?? null,
+      accentColor: courseCard?.accentColor ?? salesPage?.theme.accent ?? null,
+      cardStyle: courseCard?.cardStyle ?? null,
+      durationLabel: courseCard?.duration ?? null,
     };
   });
 

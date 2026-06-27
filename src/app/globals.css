@@ -81,6 +81,71 @@
     background-size: 36px 36px;
   }
 
+  @keyframes hero-orb-float-a {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(44px, -32px, 0) scale(1.08);
+    }
+  }
+
+  @keyframes hero-orb-float-b {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(-56px, 38px, 0) scale(0.92);
+    }
+  }
+
+  @keyframes hero-orb-float-c {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(22px, 56px, 0) scale(1.05);
+    }
+  }
+
+  @keyframes hero-orb-float-d {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+
+    50% {
+      transform: translate3d(-28px, -24px, 0) scale(1.1);
+    }
+  }
+
+  .hero-orb {
+    @apply absolute rounded-full will-change-transform;
+    filter: blur(90px);
+  }
+
+  .hero-orb-a {
+    animation: hero-orb-float-a 18s ease-in-out infinite;
+  }
+
+  .hero-orb-b {
+    animation: hero-orb-float-b 22s ease-in-out infinite;
+  }
+
+  .hero-orb-c {
+    animation: hero-orb-float-c 20s ease-in-out infinite;
+  }
+
+  .hero-orb-d {
+    animation: hero-orb-float-d 24s ease-in-out infinite;
+  }
+
   .premium-control {
     @apply h-12 w-full rounded-2xl border border-black/10 bg-[#f6f7fb] px-4 text-sm text-black outline-none transition duration-200 placeholder:text-muted-foreground focus:border-black/20 focus:bg-white focus:ring-2 focus:ring-black/5;
   }
