@@ -266,8 +266,8 @@ export default async function FunnelStepPage({
                 className="h-12 rounded-2xl"
               />
 
-              <div className="space-y-3 rounded-[1.6rem] border border-black/8 bg-[#f7f8ff] px-4 py-4 text-sm text-black/62">
-                <label className="flex items-start gap-3">
+              <div className="space-y-3 rounded-[1.6rem] border border-black/8 bg-[#f7f8ff] px-4 py-4 text-sm text-black">
+                <label className="flex items-start gap-3 text-black">
                   <input
                     required
                     type="checkbox"
@@ -275,28 +275,32 @@ export default async function FunnelStepPage({
                     defaultChecked={prepared.visit.personalDataConsentGranted}
                     className="mt-1 size-4 rounded border-black/20"
                   />
-                  <span>
+                  <span className="text-black">
                     Согласен на обработку персональных данных для получения
                     материалов и ответа по заявке.
                   </span>
                 </label>
-                <label className="flex items-start gap-3">
+                <label className="flex items-start gap-3 text-black">
                   <input
                     type="checkbox"
                     name="emailMarketingConsent"
                     defaultChecked={prepared.visit.emailConsentGranted}
                     className="mt-1 size-4 rounded border-black/20"
                   />
-                  <span>Можно присылать follow-up письма на email.</span>
+                  <span className="text-black">
+                    Можно присылать follow-up письма на email.
+                  </span>
                 </label>
-                <label className="flex items-start gap-3">
+                <label className="flex items-start gap-3 text-black">
                   <input
                     type="checkbox"
                     name="telegramMarketingConsent"
                     defaultChecked={prepared.visit.telegramConsentGranted}
                     className="mt-1 size-4 rounded border-black/20"
                   />
-                  <span>Можно писать дожимы и напоминания в Telegram.</span>
+                  <span className="text-black">
+                    Можно писать дожимы и напоминания в Telegram.
+                  </span>
                 </label>
               </div>
 

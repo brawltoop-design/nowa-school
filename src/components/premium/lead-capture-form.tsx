@@ -229,34 +229,38 @@ export function LeadCaptureForm({
         />
       ) : null}
 
-      <div className="space-y-3 rounded-[1.6rem] border border-black/8 bg-[#f7f8ff] px-4 py-4 text-sm text-black/62">
-        <label className="flex items-start gap-3">
+      <div className="space-y-3 rounded-[1.6rem] border border-black/8 bg-[#f7f8ff] px-4 py-4 text-sm text-black">
+        <label className="flex items-start gap-3 text-black">
           <input
             required
             type="checkbox"
             name="personalDataConsent"
             className="mt-1 size-4 rounded border-black/20"
           />
-          <span>
+          <span className="text-black">
             Согласен на обработку персональных данных для получения материалов и
             ответа по заявке.
           </span>
         </label>
-        <label className="flex items-start gap-3">
+        <label className="flex items-start gap-3 text-black">
           <input
             type="checkbox"
             name="emailMarketingConsent"
             className="mt-1 size-4 rounded border-black/20"
           />
-          <span>Можно присылать письма, обновления и follow-up на email.</span>
+          <span className="text-black">
+            Можно присылать письма, обновления и follow-up на email.
+          </span>
         </label>
-        <label className="flex items-start gap-3">
+        <label className="flex items-start gap-3 text-black">
           <input
             type="checkbox"
             name="telegramMarketingConsent"
             className="mt-1 size-4 rounded border-black/20"
           />
-          <span>Можно писать в Telegram по заявке, материалам и напоминаниям.</span>
+          <span className="text-black">
+            Можно писать в Telegram по заявке, материалам и напоминаниям.
+          </span>
         </label>
       </div>
 
