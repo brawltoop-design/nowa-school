@@ -1,5 +1,6 @@
 import { Prisma, type SalesPageAnalyticsEventType } from "@prisma/client";
 import { getPrismaClient } from "@/server/db";
+import { recordPlatformEvent } from "@/server/events";
 
 function toInputJson(value: unknown) {
   return value as Prisma.InputJsonValue;
@@ -14,8 +15,7 @@ export async function recordSalesPageAnalyticsEvent(input: {
   metadata?: Record<string, unknown>;
 }) {
   const prisma = getPrismaClient();
-
-  await prisma.salesPageAnalyticsEvent.create({
+  const created = await prisma.salesPageAnalyticsEvent.create({
     data: {
       salesPageId: input.salesPageId,
       courseId: input.courseId,
@@ -25,4 +25,32 @@ export async function recordSalesPageAnalyticsEvent(input: {
       metadata: toInputJson(input.metadata ?? {}),
     },
   });
+  const course = await prisma.course.findUnique({
+    where: {
+      id: input.courseId,
+    },
+    select: {
+      authorId: true,
+    },
+  });
+
+  if (!course) {
+    return created;
+  }
+
+  await recordPlatformEvent({
+    ownerId: course.authorId,
+    courseId: input.courseId,
+    source: "sales_page",
+    name: input.type,
+    visitorId: input.visitorId ?? null,
+    metadata: {
+      salesPageId: input.salesPageId,
+      userId: input.userId ?? null,
+      ...(input.metadata ?? {}),
+    },
+    timestamp: created.createdAt,
+  });
+
+  return created;
 }

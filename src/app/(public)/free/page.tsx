@@ -56,7 +56,10 @@ export default function FreePage() {
               Телеграм-бота или CRM.
             </p>
             <div className="mt-6">
-              <LeadCaptureForm buttonLabel="Забрать бесплатно" />
+              <LeadCaptureForm
+                source="free_starter_kit"
+                buttonLabel="Забрать бесплатно"
+              />
             </div>
           </PremiumCard>
         </section>

@@ -156,7 +156,11 @@ export default function TelegramPage() {
                 Оставь email или Telegram и получи starter kit до входа в клуб.
               </p>
             </div>
-            <LeadCaptureForm compact buttonLabel="Получить пример" />
+            <LeadCaptureForm
+              compact
+              source="telegram_club"
+              buttonLabel="Получить пример"
+            />
           </div>
         </PremiumCard>
       </div>

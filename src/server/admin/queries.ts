@@ -117,12 +117,18 @@ export type AdminOrderRow = {
     slug: string;
   };
   amount: number;
+  refundedAmount: number;
   platformFee: number;
   authorRevenue: number;
   currency: string;
   status: OrderStatus;
+  paymentMethod: string;
   paymentProvider: string | null;
   paymentId: string | null;
+  paymentStatus: string | null;
+  installmentStatus: string | null;
+  payoutStatus: string | null;
+  paidAt: Date | null;
   createdAt: Date;
 };
 
@@ -447,6 +453,23 @@ export async function getAdminOrders(
           currency: true,
         },
       },
+      payments: {
+        orderBy: [{ createdAt: "desc" }],
+        take: 1,
+        select: {
+          status: true,
+        },
+      },
+      installmentPlan: {
+        select: {
+          status: true,
+        },
+      },
+      payout: {
+        select: {
+          status: true,
+        },
+      },
     },
   });
 
@@ -459,12 +482,18 @@ export async function getAdminOrders(
       slug: order.course.slug,
     },
     amount: decimalToNumber(order.amount),
+    refundedAmount: order.refundedMinor / 100,
     platformFee: decimalToNumber(order.platformFee),
     authorRevenue: decimalToNumber(order.authorRevenue),
     currency: order.course.currency,
     status: order.status,
+    paymentMethod: order.paymentMethod,
     paymentProvider: order.paymentProvider,
     paymentId: order.paymentId,
+    paymentStatus: order.payments[0]?.status ?? null,
+    installmentStatus: order.installmentPlan?.status ?? null,
+    payoutStatus: order.payout?.status ?? null,
+    paidAt: order.paidAt,
     createdAt: order.createdAt,
   }));
 }

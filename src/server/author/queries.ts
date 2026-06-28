@@ -219,7 +219,7 @@ export async function getAuthorDashboardData(
   const prisma = getPrismaClient();
   const courseWhere = buildCourseAccessWhere(actor);
 
-  const [courses, recentSales] = await Promise.all([
+  const [courses, recentSales, platformEvents] = await Promise.all([
     prisma.course.findMany({
       where: courseWhere,
       orderBy: [{ updatedAt: "desc" }],
@@ -252,11 +252,6 @@ export async function getAuthorDashboardData(
         salesPage: {
           select: {
             status: true,
-            events: {
-              select: {
-                type: true,
-              },
-            },
           },
         },
       },
@@ -284,9 +279,18 @@ export async function getAuthorDashboardData(
         },
       },
     }),
+    prisma.event.findMany({
+      where: actor.role === UserRole.ADMIN ? {} : { ownerId: actor.userId },
+      select: {
+        courseId: true,
+        source: true,
+        name: true,
+      },
+    }),
   ]);
 
   const mappedCourses: AuthorDashboardCourse[] = courses.map((course) => {
+    const courseEvents = platformEvents.filter((event) => event.courseId === course.id);
     const lessonCount = course.modules.reduce(
       (sum, module) => sum + module._count.lessons,
       0,
@@ -299,15 +303,17 @@ export async function getAuthorDashboardData(
       (sum, order) => sum + Number(order.authorRevenue),
       0,
     );
-    const pageViews =
-      course.salesPage?.events.filter((event) => event.type === "PAGE_VIEW").length ??
-      0;
-    const checkoutClicks =
-      course.salesPage?.events.filter((event) => event.type === "CHECKOUT_CLICK").length ??
-      0;
-    const purchases =
-      course.salesPage?.events.filter((event) => event.type === "PURCHASE").length ??
-      course.orders.length;
+    const pageViews = courseEvents.filter(
+      (event) => event.source === "sales_page" && event.name === "page_view",
+    ).length;
+    const checkoutClicks = courseEvents.filter(
+      (event) =>
+        (event.source === "sales_page" && event.name === "checkout_click") ||
+        (event.source === "billing" && event.name === "checkout_start"),
+    ).length;
+    const purchases = courseEvents.filter(
+      (event) => event.source === "billing" && event.name === "payment_succeeded",
+    ).length || course.orders.length;
 
     return {
       id: course.id,

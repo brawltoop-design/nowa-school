@@ -166,7 +166,7 @@ export default async function AuthorSalesPagePreview({
                 course={course}
                 salesPage={salesPage}
                 mode="preview"
-                primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
+                primaryHref={`/checkout?course=${encodeURIComponent(course.slug)}`}
                 secondaryHref={`/courses/${course.slug}#curriculum`}
               />
               <LockedPreviewFooter />
@@ -194,7 +194,7 @@ export default async function AuthorSalesPagePreview({
                 salesPage={salesPage}
                 mode="preview"
                 deviceMode="mobile"
-                primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
+                primaryHref={`/checkout?course=${encodeURIComponent(course.slug)}`}
                 secondaryHref={`/courses/${course.slug}#curriculum`}
               />
               <LockedPreviewFooter />

@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { answerStudentQuestion } from "@/lib/ai";
+import { recordContactLifecycleEvent } from "@/server/automations/engine";
 import { getServerAuthSession } from "@/server/auth/session";
 import { getPrismaClient } from "@/server/db";
 import {
@@ -74,7 +75,7 @@ export async function completeStudentLesson(
   const actor = await requireStudentForMutation(courseId);
   const prisma = getPrismaClient();
 
-  await prisma.$transaction(async (tx) => {
+  const completionResult = await prisma.$transaction(async (tx) => {
     const enrollment = await tx.enrollment.findUnique({
       where: {
         userId_courseId: {
@@ -106,6 +107,17 @@ export async function completeStudentLesson(
         quest: {
           select: {
             rewardPoints: true,
+          },
+        },
+        module: {
+          select: {
+            id: true,
+            title: true,
+            course: {
+              select: {
+                authorId: true,
+              },
+            },
           },
         },
       },
@@ -152,7 +164,12 @@ export async function completeStudentLesson(
     });
 
     if (existingProgress?.completed) {
-      return null;
+      return {
+        moduleCompleted: false,
+        authorId: lesson.module.course.authorId,
+        moduleId: lesson.module.id,
+        moduleTitle: lesson.module.title,
+      };
     }
 
     const [completedLessonsCount, totalLessons, previousCompletedProgress] =
@@ -190,6 +207,24 @@ export async function completeStudentLesson(
         }),
       ]);
 
+    const [completedModuleLessonsCount, totalModuleLessonsCount] =
+      await Promise.all([
+        tx.lessonProgress.count({
+          where: {
+            enrollmentId: enrollment.id,
+            completed: true,
+            lesson: {
+              moduleId: lesson.module.id,
+            },
+          },
+        }),
+        tx.lesson.count({
+          where: {
+            moduleId: lesson.module.id,
+          },
+        }),
+      ]);
+
     let streakDays = enrollment.streakDays;
 
     if (previousCompletedProgress?.completedAt) {
@@ -220,10 +255,39 @@ export async function completeStudentLesson(
         progressPercent,
         level,
         streakDays,
+        lastActivityAt: now,
       },
     });
 
+    return {
+      moduleCompleted:
+        totalModuleLessonsCount > 0 &&
+        completedModuleLessonsCount >= totalModuleLessonsCount,
+      authorId: lesson.module.course.authorId,
+      moduleId: lesson.module.id,
+      moduleTitle: lesson.module.title,
+    };
   });
+
+  if (completionResult.moduleCompleted) {
+    await recordContactLifecycleEvent({
+      authorId: completionResult.authorId,
+      courseId,
+      type: "MODULE_COMPLETED",
+      eventKey: `module_completed:${actor.id}:${completionResult.moduleId}`,
+      metadata: {
+        moduleId: completionResult.moduleId,
+        moduleTitle: completionResult.moduleTitle,
+      },
+      contact: {
+        userId: actor.id,
+        fullName: actor.name,
+        email: actor.email,
+        source: `learn:${courseId}`,
+        isStudent: true,
+      },
+    });
+  }
 
   revalidateLearningState(courseId);
 
@@ -333,6 +397,7 @@ export async function submitStudentQuizScore(input: {
         data: {
           points,
           level,
+          lastActivityAt: new Date(),
         },
       });
     }

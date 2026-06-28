@@ -8,6 +8,7 @@ import {
   calculateAuthorRevenue,
   calculatePlatformFee,
 } from "@/lib/payments";
+import { recordContactLifecycleEvent } from "@/server/automations/engine";
 import { getServerAuthSession } from "@/server/auth/session";
 import { getPrismaClient } from "@/server/db";
 import { recordSalesPageAnalyticsEvent } from "@/server/sales-page/analytics";
@@ -41,6 +42,7 @@ export async function completeMockCheckout(courseId: string, formData: FormData)
       select: {
         id: true,
         slug: true,
+        authorId: true,
         price: true,
         status: true,
         salesPage: {
@@ -96,7 +98,7 @@ export async function completeMockCheckout(courseId: string, formData: FormData)
     const platformFee = calculatePlatformFee(amount);
     const authorRevenue = calculateAuthorRevenue(amount);
 
-    await tx.order.create({
+    const order = await tx.order.create({
       data: {
         userId: session.user.id,
         courseId,
@@ -106,6 +108,9 @@ export async function completeMockCheckout(courseId: string, formData: FormData)
         status: OrderStatus.PAID,
         paymentProvider: "mock",
         paymentId: `mock_${randomUUID()}`,
+      },
+      select: {
+        id: true,
       },
     });
 
@@ -119,6 +124,8 @@ export async function completeMockCheckout(courseId: string, formData: FormData)
     return {
       courseId: course.id,
       courseSlug: course.slug,
+      authorId: course.authorId,
+      orderId: order.id,
       salesPageId:
         course.salesPage?.status === SalesPageStatus.PUBLISHED
           ? course.salesPage.id
@@ -127,20 +134,20 @@ export async function completeMockCheckout(courseId: string, formData: FormData)
     };
   });
 
+  const metadata = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref"].reduce<Record<string, string>>(
+    (acc, key) => {
+      const value = formData.get(key);
+
+      if (typeof value === "string" && value.trim()) {
+        acc[key] = value.trim();
+      }
+
+      return acc;
+    },
+    {},
+  );
+
   if (result.state === "paid" && result.salesPageId) {
-    const metadata = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "ref"].reduce<Record<string, string>>(
-      (acc, key) => {
-        const value = formData.get(key);
-
-        if (typeof value === "string" && value.trim()) {
-          acc[key] = value.trim();
-        }
-
-        return acc;
-      },
-      {},
-    );
-
     const visitorId = formData.get("visitorId");
 
     await recordSalesPageAnalyticsEvent({
@@ -150,6 +157,29 @@ export async function completeMockCheckout(courseId: string, formData: FormData)
       visitorId: typeof visitorId === "string" && visitorId.trim() ? visitorId : null,
       userId: session.user.id,
       metadata,
+    });
+  }
+
+  if (result.state === "paid" && "authorId" in result && "orderId" in result) {
+    const paidResult = result as typeof result & {
+      authorId: string;
+      orderId: string;
+    };
+
+    await recordContactLifecycleEvent({
+      authorId: paidResult.authorId,
+      courseId: paidResult.courseId,
+      orderId: paidResult.orderId,
+      eventKey: `purchase:${paidResult.orderId}`,
+      type: "COURSE_PURCHASED",
+      metadata,
+      contact: {
+        userId: session.user.id,
+        fullName: session.user.name,
+        email: session.user.email,
+        source: metadata.utm_source ?? "checkout_mock",
+        isStudent: true,
+      },
     });
   }
 

@@ -116,7 +116,7 @@ export default async function AdminSalesPageModerationDetail({
               salesPage={detail.salesPage}
               mode="admin"
               deviceMode={previewMode}
-              primaryHref={`/checkout/mock?course=${encodeURIComponent(detail.course.slug)}`}
+              primaryHref={`/checkout?course=${encodeURIComponent(detail.course.slug)}`}
               secondaryHref={`/courses/${detail.course.slug}`}
             />
           </div>

@@ -151,7 +151,10 @@ export default async function GuidesPage({ searchParams }: GuidesPageProps) {
                 выбрать первый понятный проект.
               </p>
             </div>
-            <LeadCaptureForm buttonLabel="Получить бесплатно" />
+            <LeadCaptureForm
+              source="guides_catalog"
+              buttonLabel="Получить бесплатно"
+            />
           </div>
         </PremiumCard>
       </div>

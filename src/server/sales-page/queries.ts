@@ -250,7 +250,7 @@ function getCtaLabel(metadata: Prisma.JsonValue | null) {
   return typeof label === "string" && label.trim() ? label.trim() : "CTA";
 }
 
-function mapSalesPage(page: {
+export function mapSalesPage(page: {
   id: string;
   courseId: string;
   slug: string;

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  GitBranch,
   BookOpen,
   Bot,
   Compass,
@@ -28,6 +29,7 @@ const icons = {
   "book-open": BookOpen,
   bot: Bot,
   compass: Compass,
+  "git-branch": GitBranch,
   receipt: ReceiptText,
   "shopping-bag": ShoppingBag,
   "square-pen": SquarePen,

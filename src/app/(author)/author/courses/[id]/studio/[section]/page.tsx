@@ -1,8 +1,10 @@
 import { notFound, redirect } from "next/navigation";
+import { CoursePricingStudio } from "@/components/author/course-pricing-studio";
 import { CourseStudioSectionPage } from "@/components/author/course-studio-sections";
 import { normalizeCourseStudioSection } from "@/lib/course-studio";
 import { requireUserRole } from "@/server/auth/session";
 import { getAuthorCourseBuilderData } from "@/server/author/queries";
+import { getAuthorCoursePricingData } from "@/server/billing/queries";
 import { getCourseStudioData } from "@/server/sales-page/queries";
 
 type CourseStudioSectionRouteProps = {
@@ -27,6 +29,23 @@ export default async function CourseStudioSectionRoute({
     ["AUTHOR", "ADMIN"],
     `/author/courses/${id}/studio/${activeSection}`,
   );
+
+  if (activeSection === "pricing") {
+    const pricingResult = await getAuthorCoursePricingData(id, {
+      userId: session.user.id,
+      role: session.user.role,
+    });
+
+    if (pricingResult.status === "forbidden") {
+      redirect("/forbidden");
+    }
+
+    if (pricingResult.status === "not_found") {
+      notFound();
+    }
+
+    return <CoursePricingStudio data={pricingResult.data} />;
+  }
 
   const [studioResult, builderResult] = await Promise.all([
     getCourseStudioData(id, {

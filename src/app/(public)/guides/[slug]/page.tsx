@@ -258,7 +258,11 @@ export default async function GuidePage({ params }: GuidePageProps) {
                 Забери starter kit и выбери, какой AI-продукт собирать первым.
               </p>
             </div>
-            <LeadCaptureForm compact buttonLabel="Получить starter kit" />
+            <LeadCaptureForm
+              compact
+              source={`guide_${guide.slug}`}
+              buttonLabel="Получить starter kit"
+            />
           </div>
         </PremiumCard>
 

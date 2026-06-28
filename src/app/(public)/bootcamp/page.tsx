@@ -191,6 +191,7 @@ export default function BootcampPage() {
           <LeadCaptureForm
             title="Лист ожидания буткемпа"
             description="Оставь контакт, чтобы получить стартовый набор и уведомление о следующем потоке."
+            source="bootcamp_waitlist"
             buttonLabel="Получить приглашение"
             className="border-white/10 bg-white text-black"
           />

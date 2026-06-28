@@ -20,6 +20,10 @@ export function formatCurrency(value: number, currency: string) {
   }).format(value);
 }
 
+export function formatMinorCurrency(valueMinor: number, currency: string) {
+  return formatCurrency(valueMinor / 100, currency);
+}
+
 export function formatDurationMinutes(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;

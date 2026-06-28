@@ -57,7 +57,7 @@ export default async function PublicCoursePage({ params }: CoursePageProps) {
     .filter((item) => item.id !== course.id)
     .slice(0, 3);
 
-  const checkoutHref = `/checkout/mock?course=${encodeURIComponent(course.slug)}`;
+  const checkoutHref = `/checkout?course=${encodeURIComponent(course.slug)}`;
   const purchaseHref = course.viewer.isEnrolled
     ? `/learn/${course.id}`
     : session?.user

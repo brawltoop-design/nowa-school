@@ -3180,7 +3180,7 @@ export function SalesPageStudio({
             deviceMode={deviceMode}
             mode="editor"
             selectedBlockId={selectedBlockId}
-            primaryHref={`/checkout/mock?course=${encodeURIComponent(course.slug)}`}
+            primaryHref={`/checkout?course=${encodeURIComponent(course.slug)}`}
             secondaryHref={`/courses/${course.slug}#curriculum`}
             toolbarHandlers={{
               onSelect: setSelectedBlockId,

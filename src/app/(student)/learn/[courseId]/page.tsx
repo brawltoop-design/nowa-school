@@ -19,6 +19,7 @@ import { PremiumButton } from "@/components/premium/premium-button";
 import { PremiumCard } from "@/components/premium/premium-card";
 import { SectionHeader } from "@/components/premium/section-header";
 import { CourseAssistantDock } from "@/components/student/course-assistant-dock";
+import { CourseActivityBeacon } from "@/components/student/course-activity-beacon";
 import { LessonCompleteButton } from "@/components/student/lesson-complete-button";
 import { LessonPracticeWorkspace } from "@/components/student/lesson-practice-workspace";
 import { LessonQuizCard } from "@/components/student/lesson-quiz-card";
@@ -110,6 +111,7 @@ export default async function LearnCoursePage({
 
   return (
     <div className="space-y-6">
+      <CourseActivityBeacon courseId={course.id} />
       <Breadcrumbs
         items={[
           { label: "Кабинет ученика", href: "/learn" },

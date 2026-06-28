@@ -10,6 +10,11 @@ export const courseStudioSections = [
     description: "Мини-Tilda для контента публичной страницы курса.",
   },
   {
+    key: "pricing",
+    label: "Платежи и тарифы",
+    description: "Тарифы, промокоды, заказы, возвраты и выплаты по курсу.",
+  },
+  {
     key: "curriculum",
     label: "Конструктор программы",
     description: "Архитектура модулей и логика учебного пути.",
@@ -53,6 +58,7 @@ const legacyTabMap: Record<string, CourseStudioSectionKey> = {
   overview: "overview",
   "creative-site": "creative-site",
   "sales-page": "creative-site",
+  pricing: "pricing",
   curriculum: "curriculum",
   lessons: "lessons",
   assignments: "practice",

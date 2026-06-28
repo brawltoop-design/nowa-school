@@ -116,6 +116,7 @@ export default function BlogPage() {
           <LeadCaptureForm
             title="Подписаться на обновления"
             description="Стартовый набор придет как первый материал."
+            source="blog_digest"
             buttonLabel="Подписаться"
             className="border-white/10 bg-white text-black"
           />

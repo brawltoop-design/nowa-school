@@ -8,6 +8,7 @@ export type DashboardIconKey =
   | "book-open"
   | "bot"
   | "compass"
+  | "git-branch"
   | "receipt"
   | "shopping-bag"
   | "square-pen"
@@ -33,6 +34,8 @@ export const publicNavigation: PublicNavItem[] = [
 export const dashboardNavigation = {
   author: [
     { title: "Обзор", href: "/author", icon: "layout-dashboard" },
+    { title: "Автоматизации", href: "/author/automations", icon: "bot" },
+    { title: "Воронки", href: "/author/funnels", icon: "git-branch" },
     { title: "Новый курс", href: "/author/courses/new", icon: "square-pen" },
     { title: "Витрина", href: "/courses", icon: "book-open" },
   ],

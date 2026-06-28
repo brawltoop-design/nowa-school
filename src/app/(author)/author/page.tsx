@@ -65,6 +65,12 @@ export default async function AuthorDashboardPage() {
               <Link href="/author/courses/new">Создать курс</Link>
             </PremiumButton>
             <PremiumButton asChild tone="secondary" className="h-12 px-5">
+              <Link href="/author/automations">Открыть автоматизации</Link>
+            </PremiumButton>
+            <PremiumButton asChild tone="secondary" className="h-12 px-5">
+              <Link href="/author/funnels">Открыть воронки</Link>
+            </PremiumButton>
+            <PremiumButton asChild tone="secondary" className="h-12 px-5">
               <Link href="/courses">Открыть витрину</Link>
             </PremiumButton>
           </div>

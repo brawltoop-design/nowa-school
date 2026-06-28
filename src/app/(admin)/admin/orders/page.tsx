@@ -35,6 +35,25 @@ const orderStatusLabel = {
   REFUNDED: "Возврат",
 } as const;
 
+function getPaymentStatusLabel(status: string | null) {
+  switch (status) {
+    case "SUCCEEDED":
+      return "Подтверждён";
+    case "FAILED":
+      return "Ошибка";
+    case "PARTIALLY_REFUNDED":
+      return "Частичный возврат";
+    case "REFUNDED":
+      return "Возвращён";
+    case "REQUIRES_ACTION":
+      return "Нужно действие";
+    case "PENDING":
+      return "Ожидает";
+    default:
+      return "—";
+  }
+}
+
 export default async function AdminOrdersPage({
   searchParams,
 }: AdminOrdersPageProps) {
@@ -63,7 +82,7 @@ export default async function AdminOrdersPage({
       <SectionHeader
         eyebrow="Платежи"
         title="Заказы"
-        description="Финансовый журнал с суммой заказа, комиссией платформы и выплатой автору."
+        description="Финансовый журнал с суммой заказа, payment/installment статусами, возвратами и выплатой автору."
       />
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -120,7 +139,7 @@ export default async function AdminOrdersPage({
               {orders.length}
             </p>
           </div>
-          <Badge variant="subtle">Демо-оплата подключена</Badge>
+          <Badge variant="subtle">Provider abstraction активен</Badge>
         </div>
 
         {orders.length ? (
@@ -131,9 +150,12 @@ export default async function AdminOrdersPage({
                   <th className="px-5 py-4 font-medium">Покупатель</th>
                   <th className="px-5 py-4 font-medium">Курс</th>
                   <th className="px-5 py-4 font-medium">Сумма</th>
+                  <th className="px-5 py-4 font-medium">Возврат</th>
                   <th className="px-5 py-4 font-medium">Комиссия платформы</th>
                   <th className="px-5 py-4 font-medium">Доход автора</th>
                   <th className="px-5 py-4 font-medium">Статус</th>
+                  <th className="px-5 py-4 font-medium">Payment</th>
+                  <th className="px-5 py-4 font-medium">Payout</th>
                   <th className="px-5 py-4 font-medium">Дата</th>
                   <th className="px-5 py-4 font-medium">Платеж</th>
                 </tr>
@@ -161,6 +183,9 @@ export default async function AdminOrdersPage({
                       {formatCurrency(order.amount, order.currency)}
                     </td>
                     <td className="px-5 py-4 text-black">
+                      {formatCurrency(order.refundedAmount, order.currency)}
+                    </td>
+                    <td className="px-5 py-4 text-black">
                       {formatCurrency(order.platformFee, order.currency)}
                     </td>
                     <td className="px-5 py-4 text-black">
@@ -171,8 +196,18 @@ export default async function AdminOrdersPage({
                         {orderStatusLabel[order.status]}
                       </Badge>
                     </td>
+                    <td className="px-5 py-4">
+                      <p className="text-black">{getPaymentStatusLabel(order.paymentStatus)}</p>
+                      <p className="text-black/44">
+                        {order.paymentMethod}
+                        {order.installmentStatus ? ` · ${order.installmentStatus}` : ""}
+                      </p>
+                    </td>
                     <td className="px-5 py-4 text-black/52">
-                      {format(order.createdAt, "d MMM yyyy, HH:mm", { locale: ru })}
+                      {order.payoutStatus ?? "—"}
+                    </td>
+                    <td className="px-5 py-4 text-black/52">
+                      {format(order.paidAt ?? order.createdAt, "d MMM yyyy, HH:mm", { locale: ru })}
                     </td>
                     <td className="px-5 py-4">
                       <p className="text-black">{order.paymentProvider ?? "вручную"}</p>

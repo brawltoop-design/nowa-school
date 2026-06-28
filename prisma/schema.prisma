@@ -26,6 +26,226 @@ enum OrderStatus {
   REFUNDED
 }
 
+enum PaymentFlowType {
+  FULL
+  INSTALLMENT
+}
+
+enum PaymentMethodKind {
+  CARD
+  SBP
+  INSTALLMENT
+}
+
+enum PaymentGatewayProvider {
+  MOCK
+  STRIPE
+}
+
+enum InstallmentGatewayProvider {
+  MOCK
+  TINKOFF
+}
+
+enum PaymentRecordStatus {
+  PENDING
+  REQUIRES_ACTION
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum InstallmentPlanStatus {
+  PENDING
+  APPROVED
+  DECLINED
+  ACTIVE
+  FAILED
+  CANCELLED
+  COMPLETED
+}
+
+enum TariffStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum PromocodeDiscountType {
+  PERCENT
+  FIXED
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  REVERSED
+  FAILED
+}
+
+enum BillingEventType {
+  ORDER_CREATED
+  CHECKOUT_START
+  PAYMENT_PENDING
+  PAYMENT_SUCCEEDED
+  PAYMENT_FAILED
+  INSTALLMENT_SELECTED
+  REFUND_ISSUED
+  ACCESS_GRANTED
+}
+
+enum WebhookProviderScope {
+  PAYMENT
+  INSTALLMENT
+}
+
+enum FunnelStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum FunnelStepType {
+  LANDING
+  LEAD_CAPTURE
+  CHECKOUT
+  UPSELL
+  DOWNSELL
+  THANK_YOU
+}
+
+enum FunnelVisitStatus {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+enum FunnelEventType {
+  FUNNEL_ENTER
+  STEP_VIEW
+  FORM_SUBMIT
+  CHECKOUT_START
+  ORDER_BUMP_ADDED
+  UPSELL_VIEW
+  UPSELL_ACCEPT
+  UPSELL_DECLINE
+  FUNNEL_COMPLETE
+}
+
+enum DealStage {
+  NEW_LEAD
+  INTERESTED
+  CHECKOUT_STARTED
+  PAID
+  LOST
+}
+
+enum SegmentKind {
+  MANUAL
+  NO_PURCHASE_7D
+  ABANDONED_CHECKOUT
+  PURCHASED_COURSE
+}
+
+enum ContactEventType {
+  LEAD_CAPTURED
+  CHECKOUT_STARTED
+  COURSE_PURCHASED
+  WEBINAR_REGISTERED
+  COURSE_VIEWED
+  MODULE_COMPLETED
+}
+
+enum DiscountCodeStatus {
+  ACTIVE
+  USED
+  EXPIRED
+}
+
+enum AutomationStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum AutomationTriggerType {
+  LEAD_CAPTURED
+  ABANDONED_CHECKOUT
+  WEBINAR_REGISTERED
+  COURSE_INACTIVE_DAYS
+  MODULE_COMPLETED
+  DAYS_AFTER_EVENT
+}
+
+enum AutomationDelayUnit {
+  MINUTES
+  HOURS
+  DAYS
+}
+
+enum AutomationActionType {
+  SEND_MESSAGE
+  APPLY_TAG
+  CHANGE_DEAL_STAGE
+  ISSUE_PROMO_CODE
+  CREATE_FOLLOW_UP
+}
+
+enum AutomationRunStatus {
+  ACTIVE
+  COMPLETED
+  GOAL_MET
+  EXITED
+  STOPPED
+  FAILED
+}
+
+enum AutomationDispatchStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  RETRYING
+  SKIPPED
+  FAILED
+  CANCELLED
+}
+
+enum MessageChannel {
+  TELEGRAM
+  EMAIL
+}
+
+enum MessageProvider {
+  MOCK
+  TELEGRAM
+  SMTP
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  OPENED
+  FAILED
+  SKIPPED
+}
+
+enum AutomationEventType {
+  AUTOMATION_ENTER
+  MESSAGE_SENT
+  MESSAGE_OPENED
+  AUTOMATION_GOAL_MET
+  AUTOMATION_EXIT
+}
+
 enum AiGenerationStatus {
   DRAFT
   APPLIED
@@ -160,6 +380,22 @@ model User {
   reviewedSalesPageSubmissions SalesPageSubmission[]  @relation("SalesPageSubmissionReviewer")
   salesPageEvents            SalesPageAnalyticsEvent[]
   moderationIssues           CourseModerationIssue[]  @relation("CourseModerationIssueAuthor")
+  funnels                    Funnel[]
+  funnelVisits               FunnelVisit[]
+  contacts                   Contact[]                 @relation("ContactAuthor")
+  linkedContacts             Contact[]                 @relation("ContactUser")
+  segments                   Segment[]
+  tags                       Tag[]
+  deals                      Deal[]                   @relation("DealAuthor")
+  contactEvents              ContactEvent[]
+  authoredAutomations        Automation[]
+  automationRuns             AutomationRun[]          @relation("AutomationRunUser")
+  authoredMessages           Message[]                @relation("MessageAuthor")
+  discountCodes              DiscountCode[]
+  authoredPromocodes         Promocode[]
+  payouts                    Payout[]
+  billingAuditLogs           BillingAuditLog[]
+  platformEvents             Event[]
   accounts                   Account[]
   sessions                   Session[]
   createdAt                  DateTime                 @default(now())
@@ -193,6 +429,13 @@ model Course {
   salesPage                CourseSalesPage?
   salesPageAnalyticsEvents SalesPageAnalyticsEvent[]
   moderationIssues         CourseModerationIssue[]
+  funnels                  Funnel[]
+  deals                    Deal[]
+  contactEvents            ContactEvent[]
+  automations              Automation[]
+  tariffs                  Tariff[]
+  promocodes               Promocode[]
+  platformEvents           Event[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 
@@ -296,6 +539,7 @@ model Enrollment {
   points          Int              @default(0)
   level           Int              @default(1)
   streakDays      Int              @default(0)
+  lastActivityAt  DateTime         @default(now())
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   course          Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessonProgresses LessonProgress[]
@@ -324,18 +568,713 @@ model Order {
   id              String      @id @default(cuid())
   userId          String
   courseId        String
+  tariffId        String?
+  promocodeId     String?
+  contactId       String?
+  funnelId        String?
+  funnelStepId    String?
+  funnelVisitId   String?
   amount          Decimal     @db.Decimal(10, 2)
+  currency        String      @default("USD")
+  subtotalMinor   Int         @default(0)
+  discountMinor   Int         @default(0)
+  amountMinor     Int         @default(0)
   platformFee     Decimal     @db.Decimal(10, 2)
+  platformFeeMinor Int        @default(0)
   authorRevenue   Decimal     @db.Decimal(10, 2)
+  authorRevenueMinor Int      @default(0)
+  refundedMinor   Int         @default(0)
   status          OrderStatus @default(PENDING)
+  paymentFlow     PaymentFlowType @default(FULL)
+  paymentMethod   PaymentMethodKind @default(CARD)
   paymentProvider String?
   paymentId       String?
+  installmentProvider String?
+  checkoutSessionKey String?  @unique
+  productTitleSnapshot String?
+  tariffTitleSnapshot String?
+  promocodeSnapshot  String?
+  offerUrl          String?
+  refundPolicyUrl   String?
+  billingFullName   String?
+  billingEmail      String?
+  paidAt            DateTime?
+  metadata          Json?
+  orderBumpSelected Boolean   @default(false)
+  orderBumpTitle   String?
+  orderBumpAmount  Decimal?   @db.Decimal(10, 2)
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   course          Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  tariff          Tariff?     @relation(fields: [tariffId], references: [id], onDelete: SetNull)
+  promocode       Promocode?  @relation(fields: [promocodeId], references: [id], onDelete: SetNull)
+  contact         Contact?    @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  funnel          Funnel?     @relation(fields: [funnelId], references: [id], onDelete: SetNull)
+  funnelStep      FunnelStep? @relation(fields: [funnelStepId], references: [id], onDelete: SetNull)
+  funnelVisit     FunnelVisit? @relation(fields: [funnelVisitId], references: [id], onDelete: SetNull)
+  payments        Payment[]
+  installmentPlan InstallmentPlan?
+  refunds         Refund[]
+  payout          Payout?
+  webhookEvents   ProviderWebhookEvent[]
+  billingEvents   BillingAuditLog[]
+  deals           Deal[]
+  contactEvents   ContactEvent[]
+  platformEvents  Event[]
   createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @default(now()) @updatedAt
 
   @@index([userId])
   @@index([courseId])
+  @@index([tariffId])
+  @@index([promocodeId])
+  @@index([contactId])
+  @@index([funnelId])
+  @@index([funnelStepId])
+  @@index([funnelVisitId])
+}
+
+model Tariff {
+  id          String       @id @default(cuid())
+  courseId    String
+  title       String
+  slug        String
+  description String?      @db.Text
+  priceMinor  Int
+  currency    String       @default("USD")
+  status      TariffStatus @default(ACTIVE)
+  isDefault   Boolean      @default(false)
+  features    Json?
+  sortOrder   Int          @default(0)
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  orders      Order[]
+  promocodes  Promocode[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([courseId, slug])
+  @@unique([courseId, sortOrder])
+  @@index([courseId, status])
+}
+
+model Promocode {
+  id              String                 @id @default(cuid())
+  authorId        String
+  courseId        String?
+  tariffId        String?
+  code            String                 @unique
+  description     String?                @db.Text
+  discountType    PromocodeDiscountType
+  percentOff      Int?
+  amountOffMinor  Int?
+  currency        String?
+  maxRedemptions  Int?
+  redemptionsCount Int                   @default(0)
+  validFrom       DateTime?
+  validUntil      DateTime?
+  isActive        Boolean                @default(true)
+  metadata        Json?
+  author          User                   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  course          Course?                @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  tariff          Tariff?                @relation(fields: [tariffId], references: [id], onDelete: SetNull)
+  orders          Order[]
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([authorId, isActive, validUntil])
+  @@index([courseId])
+  @@index([tariffId])
+}
+
+model Payment {
+  id                 String                 @id @default(cuid())
+  orderId            String
+  provider           PaymentGatewayProvider
+  providerPaymentId  String?
+  method             PaymentMethodKind
+  status             PaymentRecordStatus    @default(PENDING)
+  amountMinor        Int
+  currency           String
+  confirmationUrl    String?
+  providerSessionId  String?
+  idempotencyKey     String                 @unique
+  failureCode        String?
+  failureMessage     String?
+  metadata           Json?
+  confirmedAt        DateTime?
+  failedAt           DateTime?
+  refundedAt         DateTime?
+  order              Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  refunds            Refund[]
+  webhookEvents      ProviderWebhookEvent[]
+  billingEvents      BillingAuditLog[]
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+
+  @@unique([provider, providerPaymentId])
+  @@index([orderId, status])
+}
+
+model InstallmentPlan {
+  id                String                     @id @default(cuid())
+  orderId           String                     @unique
+  provider          InstallmentGatewayProvider
+  providerPlanId    String?
+  status            InstallmentPlanStatus      @default(PENDING)
+  redirectUrl       String?
+  metadata          Json?
+  approvedAt        DateTime?
+  declinedAt        DateTime?
+  order             Order                      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  webhookEvents     ProviderWebhookEvent[]
+  billingEvents     BillingAuditLog[]
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([provider, providerPlanId])
+  @@index([status, createdAt])
+}
+
+model Refund {
+  id               String       @id @default(cuid())
+  orderId          String
+  paymentId        String?
+  amountMinor      Int
+  status           RefundStatus @default(PENDING)
+  providerRefundId String?
+  idempotencyKey   String       @unique
+  reason           String?      @db.Text
+  metadata         Json?
+  processedAt      DateTime?
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payment          Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  billingEvents    BillingAuditLog[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@index([orderId, status])
+  @@index([paymentId])
+}
+
+model Payout {
+  id           String       @id @default(cuid())
+  authorId     String
+  orderId      String?      @unique
+  amountMinor  Int
+  currency     String
+  status       PayoutStatus @default(PENDING)
+  scheduledAt  DateTime?
+  paidAt       DateTime?
+  reversedAt   DateTime?
+  metadata     Json?
+  author       User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  order        Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([authorId, status, createdAt])
+}
+
+model ProviderWebhookEvent {
+  id                String               @id @default(cuid())
+  scope             WebhookProviderScope
+  provider          String
+  externalEventId   String
+  type              String
+  signatureVerified Boolean              @default(false)
+  orderId           String?
+  paymentId         String?
+  installmentPlanId String?
+  payload           Json
+  processedAt       DateTime?
+  errorMessage      String?              @db.Text
+  order             Order?               @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  payment           Payment?             @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  installmentPlan   InstallmentPlan?     @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
+  createdAt         DateTime             @default(now())
+
+  @@unique([scope, provider, externalEventId])
+  @@index([orderId, createdAt])
+  @@index([paymentId, createdAt])
+  @@index([installmentPlanId, createdAt])
+}
+
+model BillingAuditLog {
+  id                String           @id @default(cuid())
+  authorId          String
+  orderId           String?
+  paymentId         String?
+  installmentPlanId String?
+  refundId          String?
+  type              BillingEventType
+  message           String?
+  metadata          Json?
+  author            User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  order             Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  payment           Payment?         @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  installmentPlan   InstallmentPlan? @relation(fields: [installmentPlanId], references: [id], onDelete: SetNull)
+  refund            Refund?          @relation(fields: [refundId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+
+  @@index([authorId, type, createdAt])
+  @@index([orderId, createdAt])
+}
+
+model Funnel {
+  id          String       @id @default(cuid())
+  authorId    String
+  courseId    String
+  name        String
+  slug        String       @unique
+  description String?      @db.Text
+  status      FunnelStatus @default(DRAFT)
+  settings    Json?
+  entryStepId String?
+  publishedAt DateTime?
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  steps       FunnelStep[] @relation("FunnelSteps")
+  entryStep   FunnelStep?  @relation("FunnelEntryStep", fields: [entryStepId], references: [id], onDelete: SetNull)
+  visits      FunnelVisit[]
+  orders      Order[]
+  events      FunnelEvent[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([authorId, status])
+  @@index([courseId])
+}
+
+model FunnelStep {
+  id               String         @id @default(cuid())
+  funnelId         String
+  key              String
+  name             String
+  type             FunnelStepType
+  order            Int
+  config           Json
+  transitions      Json?
+  abTestEnabled    Boolean        @default(false)
+  splitPercent     Int            @default(50)
+  variantA         Json?
+  variantB         Json?
+  funnel           Funnel         @relation("FunnelSteps", fields: [funnelId], references: [id], onDelete: Cascade)
+  entryForFunnels  Funnel[]       @relation("FunnelEntryStep")
+  currentForVisits FunnelVisit[]  @relation("FunnelVisitCurrentStep")
+  orders           Order[]
+  events           FunnelEvent[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([funnelId, key])
+  @@unique([funnelId, order])
+  @@index([funnelId, type])
+}
+
+model FunnelVisit {
+  id                 String            @id @default(cuid())
+  funnelId           String
+  userId             String?
+  contactId          String?
+  currentStepId      String?
+  status             FunnelVisitStatus @default(ACTIVE)
+  leadName           String?
+  leadEmail          String?
+  telegramUsername   String?
+  utm                Json?
+  variantAssignments Json?
+  metadata           Json?
+  completedAt        DateTime?
+  lastEventAt        DateTime?
+  funnel             Funnel            @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  user               User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  contact            Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  currentStep        FunnelStep?       @relation("FunnelVisitCurrentStep", fields: [currentStepId], references: [id], onDelete: SetNull)
+  events             FunnelEvent[]
+  orders             Order[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([funnelId, status, createdAt])
+  @@index([userId])
+  @@index([contactId])
+  @@index([leadEmail])
+}
+
+model FunnelEvent {
+  id           String          @id @default(cuid())
+  funnelId     String
+  funnelVisitId String
+  stepId       String?
+  type         FunnelEventType
+  variant      String?
+  eventKey     String?
+  metadata     Json?
+  funnel       Funnel          @relation(fields: [funnelId], references: [id], onDelete: Cascade)
+  visit        FunnelVisit     @relation(fields: [funnelVisitId], references: [id], onDelete: Cascade)
+  step         FunnelStep?     @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  createdAt    DateTime        @default(now())
+
+  @@unique([funnelVisitId, eventKey])
+  @@index([funnelId, type, createdAt])
+  @@index([stepId, type, createdAt])
+}
+
+model Contact {
+  id                      String            @id @default(cuid())
+  authorId                String            @map("tenantAuthorId")
+  userId                  String?
+  fullName                String?
+  email                   String?
+  emailNormalized         String?
+  telegramUsername        String?
+  telegramUsernameNormalized String?
+  source                  String?
+  isStudent               Boolean           @default(false)
+  personalDataConsentGranted Boolean        @default(false)
+  personalDataConsentAt   DateTime?
+  emailConsentGranted     Boolean           @default(false)
+  emailConsentAt          DateTime?
+  telegramConsentGranted  Boolean           @default(false)
+  telegramConsentAt       DateTime?
+  globalUnsubscribedAt    DateTime?
+  emailUnsubscribedAt     DateTime?
+  telegramUnsubscribedAt  DateTime?
+  unsubscribeToken        String            @unique
+  lastSeenAt              DateTime          @default(now())
+  metadata                Json?
+  author                  User              @relation("ContactAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  user                    User?             @relation("ContactUser", fields: [userId], references: [id], onDelete: SetNull)
+  funnelVisits            FunnelVisit[]
+  orders                  Order[]
+  tags                    ContactTag[]
+  deals                   Deal[]
+  events                  ContactEvent[]
+  automationRuns          AutomationRun[]
+  automationEvents        AutomationRunEvent[]
+  messages                Message[]
+  discountCodes           DiscountCode[]
+  platformEvents          Event[]
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+
+  @@unique([authorId, emailNormalized])
+  @@unique([authorId, telegramUsernameNormalized])
+  @@index([authorId, createdAt])
+  @@index([userId])
+}
+
+model Tag {
+  id          String       @id @default(cuid())
+  authorId    String       @map("tenantAuthorId")
+  name        String
+  slug        String
+  color       String?
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contacts    ContactTag[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([authorId, slug])
+  @@unique([authorId, name])
+  @@index([authorId, createdAt])
+}
+
+model ContactTag {
+  contactId   String
+  tagId       String
+  contact     Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+
+  @@id([contactId, tagId])
+  @@index([tagId])
+}
+
+model Segment {
+  id          String       @id @default(cuid())
+  authorId    String       @map("tenantAuthorId")
+  name        String
+  key         String
+  kind        SegmentKind  @default(MANUAL)
+  filters     Json         @default("{}")
+  author      User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([authorId, key])
+  @@index([authorId, kind])
+}
+
+model Deal {
+  id          String      @id @default(cuid())
+  authorId    String      @map("tenantAuthorId")
+  contactId   String
+  courseId    String?
+  orderId     String?
+  dedupeKey   String      @default(cuid())
+  title       String      @default("Сделка")
+  stage       DealStage   @default(NEW_LEAD)
+  source      String?
+  value       Decimal?    @map("amount") @db.Decimal(10, 2)
+  currency    String?
+  metadata    Json?
+  lastActivityAt DateTime @default(now())
+  author      User        @relation("DealAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  contact     Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  course      Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  order       Order?      @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([contactId, dedupeKey])
+  @@index([authorId, stage, updatedAt])
+  @@index([contactId, updatedAt])
+  @@index([courseId])
+  @@index([orderId])
+}
+
+model ContactEvent {
+  id          String           @id @default(cuid())
+  authorId    String
+  contactId   String
+  courseId    String?
+  orderId     String?
+  eventKey    String?
+  type        ContactEventType
+  metadata    Json?
+  author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contact     Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  course      Course?          @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  order       Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  automationRuns AutomationRun[]
+  occurredAt  DateTime         @default(now())
+  createdAt   DateTime         @default(now())
+
+  @@index([authorId, type, occurredAt])
+  @@index([contactId, occurredAt])
+  @@index([courseId, occurredAt])
+  @@index([orderId, occurredAt])
+  @@unique([authorId, type, eventKey])
+}
+
+model Event {
+  id         String    @id @default(cuid())
+  ownerId    String
+  contactId  String?
+  courseId   String?
+  orderId    String?
+  source     String
+  name       String
+  eventKey   String?
+  visitorId  String?
+  utm        Json?
+  metadata   Json?
+  timestamp  DateTime  @default(now())
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contact    Contact?  @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  course     Course?   @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  order      Order?    @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  createdAt  DateTime  @default(now())
+
+  @@unique([ownerId, name, eventKey])
+  @@index([ownerId, timestamp])
+  @@index([source, timestamp])
+  @@index([name, timestamp])
+  @@index([contactId, timestamp])
+  @@index([courseId, timestamp])
+  @@index([orderId, timestamp])
+  @@index([visitorId, timestamp])
+}
+
+model RateLimitBucket {
+  id          String   @id
+  scope       String
+  key         String
+  windowStart DateTime
+  hits        Int      @default(1)
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([scope, key, windowStart])
+  @@index([scope, key, expiresAt])
+  @@index([expiresAt])
+}
+
+model DiscountCode {
+  id              String              @id @default(cuid())
+  authorId        String
+  contactId       String?
+  automationRunId String?
+  code            String              @unique
+  percentOff      Int?
+  amountOff       Decimal?            @db.Decimal(10, 2)
+  currency        String?
+  status          DiscountCodeStatus  @default(ACTIVE)
+  expiresAt       DateTime?
+  redeemedAt      DateTime?
+  metadata        Json?
+  author          User                @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  contact         Contact?            @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  automationRun   AutomationRun?      @relation(fields: [automationRunId], references: [id], onDelete: SetNull)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([authorId, status, createdAt])
+  @@index([contactId])
+  @@index([automationRunId])
+}
+
+model Automation {
+  id             String                @id @default(cuid())
+  authorId       String
+  courseId       String?
+  name           String
+  slug           String
+  description    String?               @db.Text
+  status         AutomationStatus      @default(DRAFT)
+  triggerType    AutomationTriggerType
+  triggerConfig  Json?
+  conditions     Json?
+  goal           Json?
+  author         User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  course         Course?               @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  steps          AutomationStep[]
+  runs           AutomationRun[]
+  events         AutomationRunEvent[]
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+
+  @@unique([authorId, slug])
+  @@index([authorId, status, triggerType])
+  @@index([courseId])
+}
+
+model AutomationStep {
+  id            String               @id @default(cuid())
+  automationId  String
+  order         Int
+  title         String
+  delayAmount   Int                  @default(0)
+  delayUnit     AutomationDelayUnit  @default(HOURS)
+  actionType    AutomationActionType
+  actionConfig  Json
+  automation    Automation           @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  runs          AutomationDispatch[]
+  messages      Message[]
+  events        AutomationRunEvent[]
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  @@unique([automationId, order])
+  @@index([automationId, actionType])
+}
+
+model AutomationRun {
+  id             String               @id @default(cuid())
+  automationId   String
+  contactId      String
+  userId         String?
+  triggerEventId String?
+  entryKey       String
+  status         AutomationRunStatus  @default(ACTIVE)
+  currentStepOrder Int?
+  enteredAt      DateTime             @default(now())
+  completedAt    DateTime?
+  goalMetAt      DateTime?
+  exitedAt       DateTime?
+  exitReason     String?
+  metadata       Json?
+  automation     Automation           @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  contact        Contact              @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  user           User?                @relation("AutomationRunUser", fields: [userId], references: [id], onDelete: SetNull)
+  triggerEvent   ContactEvent?        @relation(fields: [triggerEventId], references: [id], onDelete: SetNull)
+  dispatches     AutomationDispatch[]
+  messages       Message[]
+  discountCodes  DiscountCode[]
+  events         AutomationRunEvent[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([automationId, entryKey])
+  @@index([automationId, status, enteredAt])
+  @@index([contactId, status])
+  @@index([triggerEventId])
+}
+
+model AutomationDispatch {
+  id             String                    @id @default(cuid())
+  runId          String
+  stepId         String
+  status         AutomationDispatchStatus  @default(PENDING)
+  dueAt          DateTime
+  lockedAt       DateTime?
+  lockedBy       String?
+  processedAt    DateTime?
+  attempts       Int                       @default(0)
+  lastError      String?                   @db.Text
+  run            AutomationRun             @relation(fields: [runId], references: [id], onDelete: Cascade)
+  step           AutomationStep            @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  @@unique([runId, stepId])
+  @@index([status, dueAt])
+  @@index([lockedAt])
+}
+
+model Message {
+  id               String           @id @default(cuid())
+  authorId         String
+  contactId        String
+  automationRunId  String?
+  automationStepId String?
+  channel          MessageChannel
+  provider         MessageProvider
+  status           MessageStatus    @default(PENDING)
+  dedupeKey        String           @unique
+  externalMessageId String?
+  subject          String?
+  contentText      String           @db.Text
+  contentHtml      String?          @db.Text
+  metadata         Json?
+  skipReason       String?
+  sentAt           DateTime?
+  openedAt         DateTime?
+  failedAt         DateTime?
+  author           User             @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  contact          Contact          @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  automationRun    AutomationRun?   @relation(fields: [automationRunId], references: [id], onDelete: SetNull)
+  automationStep   AutomationStep?  @relation(fields: [automationStepId], references: [id], onDelete: SetNull)
+  events           AutomationRunEvent[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@index([authorId, channel, status, createdAt])
+  @@index([contactId, sentAt])
+  @@index([automationRunId])
+  @@index([automationStepId])
+}
+
+model AutomationRunEvent {
+  id             String              @id @default(cuid())
+  automationId   String
+  runId          String
+  contactId      String
+  stepId         String?
+  messageId      String?
+  type           AutomationEventType
+  metadata       Json?
+  automation     Automation          @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  run            AutomationRun       @relation(fields: [runId], references: [id], onDelete: Cascade)
+  contact        Contact             @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  step           AutomationStep?     @relation(fields: [stepId], references: [id], onDelete: SetNull)
+  message        Message?            @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  createdAt      DateTime            @default(now())
+
+  @@index([automationId, type, createdAt])
+  @@index([contactId, createdAt])
+  @@index([runId, createdAt])
 }
 
 model Review {
